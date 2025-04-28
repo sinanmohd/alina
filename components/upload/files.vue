@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import { formatBytes } from '~/lib/utils';
+</script>
+
 <template>
   <Card>
     <CardHeader>
@@ -17,15 +21,23 @@
       </div>
       <input ref="uploadInput" type="file" multiple="true" class="invisible" @change="addInput" >
 
+      <div v-if="haveAtleastTwoFiles" class="flex justify-between px-2 font-bold">
+        <div>
+          {{ files.length }} files selected
+        </div>
+        <div>
+          {{ formatBytes(totalBytes)}} in total
+        </div>
+      </div>
       <div v-for="file in files"q class="border rounded-lg p-2 flex justify-between gap-2">
         <div class="flex gap-2 truncate">
           <Icon name="uil:file"  class="text-4xl my-auto"/>
-          <div>
+          <div class="truncate">
             <div class="font-bold my-auto truncate">
               {{ file.name }}
             </div>
             <div class="text-muted-foreground text-sm">
-              {{ file.size }}
+              {{ formatBytes(file.size) }}
             </div>
           </div>
         </div>
@@ -45,21 +57,34 @@ export default {
   data() {
     return {
       isDragging: false,
+      haveAtleastTwoFiles: false,
+      totalBytes: 0,
       files: new Array(),
     };
   },
   methods: {
     upload() {
-        console.log(this.files)
       this.files = new Array();
+      this.haveAtleastTwoFiles = false;
+    },
+    filesAdd(files: FileList | null | undefined) {
+      if (!files) {
+        return;
+      }
+      this.files = [...this.files, ...files];
+
+      this.totalBytes = 0;
+      for (const file of this.files) {
+        this.totalBytes += file.size;
+      }
+
+      if (this.files.length > 1) {
+        this.haveAtleastTwoFiles = true;
+      }
     },
     drop(event: DragEvent) {
       event.preventDefault();
-
-      if (!event.dataTransfer) {
-        return
-      }
-      this.files = [...this.files, ...event.dataTransfer.files];
+      this.filesAdd(event.dataTransfer?.files);
     },
     dragover(event: DragEvent) {
       event.preventDefault();
@@ -70,11 +95,7 @@ export default {
     },
     addInput(event: Event) {
       const el = event.target as HTMLInputElement;
-
-      if (!el.files) {
-        return
-      }
-      this.files = [...this.files, ...el.files];
+      this.filesAdd(el.files);
     },
     clickUploadInput() {
       const el = this.$refs.uploadInput as HTMLInputElement;
