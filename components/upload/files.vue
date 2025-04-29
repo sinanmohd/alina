@@ -7,7 +7,7 @@ import { formatBytes } from '~/lib/utils';
     <CardHeader>
       <CardTitle>Files</CardTitle>
       <CardDescription>
-        Your frenly neighbourhood file sharing web thing.
+        Your awesome frenly neighbourhood file sharing website.
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-2">
@@ -29,7 +29,7 @@ import { formatBytes } from '~/lib/utils';
           {{ formatBytes(totalBytes)}} in total
         </div>
       </div>
-      <div v-for="file in files"q class="border rounded-lg p-2 flex justify-between gap-2">
+      <div v-for="(file, index) in files"q class="border rounded-lg p-2 flex justify-between gap-2">
         <div class="flex gap-2 truncate">
           <Icon name="uil:file"  class="text-4xl my-auto"/>
           <div class="truncate">
@@ -41,7 +41,7 @@ import { formatBytes } from '~/lib/utils';
             </div>
           </div>
         </div>
-        <Button variant="ghost" class="my-auto">
+        <Button variant="ghost" class="my-auto" @click="filesRm(index)">
           <Icon name="mdi:close" />
         </Button>
       </div>
@@ -71,7 +71,14 @@ export default {
       if (!files) {
         return;
       }
-      this.files = [...this.files, ...files];
+
+      for (const file of files) {
+        if (this.files.find((item) => item.name == file.name)) {
+          continue;
+        }
+
+        this.files = [...this.files, file];
+      }
 
       this.totalBytes = 0;
       for (const file of this.files) {
@@ -81,6 +88,9 @@ export default {
       if (this.files.length > 1) {
         this.haveAtleastTwoFiles = true;
       }
+    },
+    filesRm(index: number) {
+      this.files.splice(index, 1);
     },
     drop(event: DragEvent) {
       event.preventDefault();
