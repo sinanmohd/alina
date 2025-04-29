@@ -3,8 +3,8 @@
     <header>
       <nav class="sm:w-7xl w-full px-3 mx-auto py-3 flex justify-between">
         <section class="flex gap-1 text-3xl">
-          <Icon name="my-icon:logo" style="color: red"/>
-          <p class="font-bold text-red-700">alina</p>
+          <Icon name="my-icon:logo" />
+          <p class="font-bold text-rose-700">alina</p>
         </section>
 
         <section class="flex">
@@ -16,6 +16,7 @@
         </section>
       </nav>
     </header>
+
     <Separator />
 
     <div class="flex-grow">
@@ -23,6 +24,7 @@
     </div>
 
     <Separator />
+
     <footer class="sm:w-7xl w-full px-3 mx-auto py-2 flex justify-between">
       <p class="text-sm text-(--ui-text-muted)">
         Copyright © {{ new Date().getFullYear() }} Sinan -
