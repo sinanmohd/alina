@@ -21,7 +21,7 @@ import { formatBytes } from '~/lib/utils';
       </div>
       <input ref="uploadInput" type="file" multiple="true" class="invisible" @change="addInput" >
 
-      <div v-if="haveAtleastTwoFiles" class="flex justify-between px-2 font-bold">
+      <div v-if="haveAtleastTwoFiles" class="flex justify-between px-2">
         <div>
           {{ files.length }} files selected
         </div>
