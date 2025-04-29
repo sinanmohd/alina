@@ -12,7 +12,7 @@ import Textarea from '~/components/ui/textarea/Textarea.vue';
     </CardHeader>
 
     <CardContent class="space-y-2">
-      <Textarea class="h-64"/>
+      <Textarea class="h-56"/>
     </CardContent>
     <CardFooter class="flex justify-end">
       <Button>Save</Button>

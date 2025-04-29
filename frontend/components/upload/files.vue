@@ -11,17 +11,21 @@ import { formatBytes } from '~/lib/utils';
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-2">
-      <div @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed p-16 rounded-lg sm:hover:bg-accent">
-        <div class="w-min mx-auto">
-          <Icon v-if="isDragging" name="mdi:add" class="text-7xl text-muted-foreground"/>
-          <Icon v-else name="mdi:cloud-upload-outline" class="text-7xl text-muted-foreground"/>
+      <input ref="uploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
+      <div @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
+        <div class="mx-auto">
+          <div class="w-min mx-auto">
+            <Icon v-if="isDragging" name="mdi:add" class="text-7xl text-muted-foreground"/>
+            <Icon v-else name="mdi:cloud-upload-outline" class="text-7xl text-muted-foreground"/>
+          </div>
+          <p v-if="isDragging" class="text-sm text-muted-foreground text-center">Drop & and I'll catch</p>
+          <p v-else class="text-sm text-muted-foreground text-center">Drag & drop files here, or click to select files</p>
         </div>
-        <p v-if="isDragging" class="text-sm text-muted-foreground text-center">Drop & and I'll catch</p>
-        <p v-else class="text-sm text-muted-foreground text-center">Drag & drop files here, or click to select files</p>
       </div>
-      <input ref="uploadInput" type="file" multiple="true" class="invisible" @change="addInput" >
 
-      <div v-if="haveAtleastTwoFiles" class="flex justify-between px-2">
+      <div v-if="files.length > 0" class="h-4" />
+
+      <div v-if="files.length > 1" class="flex justify-between px-2">
         <div>
           {{ files.length }} files selected
         </div>
@@ -41,9 +45,10 @@ import { formatBytes } from '~/lib/utils';
             </div>
           </div>
         </div>
-        <Button variant="ghost" class="my-auto" @click="filesRm(index)">
+        <Button v-if="!isUploading" variant="ghost" class="my-auto" @click="filesRm(index)">
           <Icon name="mdi:close" />
         </Button>
+        <Icon v-else class="my-auto px-6" name="svg-spinners:dot-revolve" />
       </div>
     </CardContent>
     <CardFooter class="flex justify-end">
@@ -57,15 +62,19 @@ export default {
   data() {
     return {
       isDragging: false,
-      haveAtleastTwoFiles: false,
+      isUploading: false,
       totalBytes: 0,
       files: new Array(),
     };
   },
   methods: {
     upload() {
-      this.files = new Array();
-      this.haveAtleastTwoFiles = false;
+      this.isUploading = true;
+
+      setTimeout(() => {
+        this.files = new Array();
+        this.isUploading = false;
+      }, 3000);
     },
     filesAdd(files: FileList | null | undefined) {
       if (!files) {
@@ -84,12 +93,9 @@ export default {
       for (const file of this.files) {
         this.totalBytes += file.size;
       }
-
-      if (this.files.length > 1) {
-        this.haveAtleastTwoFiles = true;
-      }
     },
     filesRm(index: number) {
+      this.totalBytes -= this.files[index].size;
       this.files.splice(index, 1);
     },
     drop(event: DragEvent) {
