@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatBytes } from '~/lib/utils';
+import { toast } from 'vue-sonner';
 </script>
 
 <template>
@@ -12,7 +13,7 @@ import { formatBytes } from '~/lib/utils';
     </CardHeader>
     <CardContent class="space-y-2">
       <input ref="uploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
-      <div v-if="isUploading" class="h-56 border-2">
+      <div v-if="isUploading" class="h-56 border-2 rounded-lg">
       </div>
       <div v-else @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
         <div class="mx-auto">
@@ -71,6 +72,20 @@ export default {
   },
   methods: {
     upload() {
+      if (this.files.length === 0) {
+        toast('No Files Selected', {
+          description: 'Please select one or more files to proceed',
+        })
+
+        return
+      } else if (this.isUploading) {
+        toast('Upload in Progress', {
+          description: 'Please wait until the current upload is complete',
+        })
+
+        return
+      }
+
       this.isUploading = true;
 
       setTimeout(() => {
