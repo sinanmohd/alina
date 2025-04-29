@@ -7,12 +7,14 @@ import { formatBytes } from '~/lib/utils';
     <CardHeader>
       <CardTitle>Files</CardTitle>
       <CardDescription>
-        Your awesome frenly neighbourhood file sharing website.
+        Your frenly neighbourhood file sharing website.
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-2">
       <input ref="uploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
-      <div @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
+      <div v-if="isUploading" class="h-56 border-2">
+      </div>
+      <div v-else @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
         <div class="mx-auto">
           <div class="w-min mx-auto">
             <Icon v-if="isDragging" name="mdi:add" class="text-7xl text-muted-foreground"/>
@@ -100,6 +102,7 @@ export default {
     },
     drop(event: DragEvent) {
       event.preventDefault();
+      this.isDragging = false;
       this.filesAdd(event.dataTransfer?.files);
     },
     dragover(event: DragEvent) {

@@ -3,7 +3,7 @@
     <CardHeader>
       <CardTitle>Terminal</CardTitle>
       <CardDescription>
-        Upload files from the comfert of your homly terminal.
+        Upload files from the comfort of your terminal.
       </CardDescription>
     </CardHeader>
 
