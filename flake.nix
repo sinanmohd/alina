@@ -18,6 +18,9 @@
 
         buildInputs = with pkgs; [
           go
+          gopls
+          sqlc
+
           nodejs
           vue-language-server
           nixfmt-rfc-style
