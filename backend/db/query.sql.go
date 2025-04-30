@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createFile = `-- name: CreateFile :exec
@@ -20,7 +19,7 @@ RETURNING id, created_at, last_access, mime_type, file_size, name
 `
 
 type CreateFileParams struct {
-	MimeType sql.NullString
+	MimeType string
 	FileSize int64
 	Name     string
 }

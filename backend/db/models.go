@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type File struct {
 	ID         interface{}
 	CreatedAt  time.Time
 	LastAccess time.Time
-	MimeType   sql.NullString
+	MimeType   string
 	FileSize   int64
 	Name       string
 }
