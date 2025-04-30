@@ -28,13 +28,9 @@ Your awesome frenly neighbourhood file sharing website.
 - Large, heavy construction with solid metal parts making it difficult to move
 - and much more...
 
-<div align = center>
-
 # gallery
 
 ![Preview A]
-
-</div>
 
 # special thanks
 
