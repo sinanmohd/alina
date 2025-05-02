@@ -11,8 +11,5 @@ func uploadChunkedStart(rw http.ResponseWriter, r *http.Request) {
 func uploadChunkedProgress(rw http.ResponseWriter, r *http.Request) {
 }
 
-func uploadChunkedEnd(rw http.ResponseWriter, r *http.Request) {
-}
-
 func uploadChunkedCancel(rw http.ResponseWriter, r *http.Request) {
 }

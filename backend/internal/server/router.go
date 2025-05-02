@@ -1,15 +1,27 @@
 package server
 
-import "net/http"
+import (
+	"fmt"
+	"log"
+	"net/http"
 
-func Run() {
+	"sinanmohd.com/alina/db"
+	"sinanmohd.com/alina/internal/config"
+)
+
+var queries *db.Queries
+
+func Run(cfg config.ServerConfig, q *db.Queries) {
+	queries = q
+
 	http.HandleFunc("POST /", uploadSimple)
 	http.HandleFunc("POST /_alina/upload/simple", uploadSimple)
 
 	http.HandleFunc("PUT /_alina/upload/chunked", uploadChunkedStart)
 	http.HandleFunc("POST /_alina/upload/chunked", uploadChunkedProgress)
-	http.HandleFunc("PATCH /_alina/upload/chunked", uploadChunkedEnd)
 	http.HandleFunc("DELETE /_alina/upload/chunked", uploadChunkedCancel)
 
-	http.ListenAndServe(":8008", nil)
+	bindAddr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)
+	log.Printf("alina is listening on http://%v\n", bindAddr)
+	http.ListenAndServe(bindAddr, nil)
 }
