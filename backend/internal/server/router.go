@@ -40,7 +40,7 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	http.HandleFunc("POST /_alina/upload/simple", uploadSimple)
 
 	http.HandleFunc("PUT /_alina/upload/chunked", uploadChunkedStart)
-	http.HandleFunc("POST /_alina/upload/chunked", uploadChunkedProgress)
+	http.HandleFunc("PATCH /_alina/upload/chunked", uploadChunkedProgress)
 	http.HandleFunc("DELETE /_alina/upload/chunked", uploadChunkedCancel)
 
 	bindAddr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)

@@ -11,13 +11,14 @@ import (
 )
 
 type Chunked struct {
-	ID         int32
-	CreatedAt  pgtype.Timestamp
-	LastAccess pgtype.Timestamp
-	FileSize   int64
-	IpAddr     netip.Addr
-	ChunksLeft int32
-	Name       string
+	ID          int32
+	CreatedAt   pgtype.Timestamp
+	LastAccess  pgtype.Timestamp
+	FileSize    int64
+	IpAddr      netip.Addr
+	ChunksLeft  int32
+	ChunksTotal int32
+	Name        string
 }
 
 type File struct {

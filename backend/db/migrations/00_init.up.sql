@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS chunked (
 	file_size BIGINT NOT NULL,
 	ip_addr INET NOT NULL,
 	chunks_left INT NOT NULL,
+	chunks_total INT NOT NULL,
 	name VARCHAR(256) NOT NULL
 );
 

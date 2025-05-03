@@ -8,22 +8,25 @@ package db
 import (
 	"context"
 	"net/netip"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const chunkedCreate = `-- name: ChunkedCreate :one
 INSERT INTO chunked (
-  file_size, name, ip_addr, chunks_left
+  file_size, name, ip_addr, chunks_left, chunks_total
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5
 )
 RETURNING id
 `
 
 type ChunkedCreateParams struct {
-	FileSize   int64
-	Name       string
-	IpAddr     netip.Addr
-	ChunksLeft int32
+	FileSize    int64
+	Name        string
+	IpAddr      netip.Addr
+	ChunksLeft  int32
+	ChunksTotal int32
 }
 
 func (q *Queries) ChunkedCreate(ctx context.Context, arg ChunkedCreateParams) (int32, error) {
@@ -32,6 +35,7 @@ func (q *Queries) ChunkedCreate(ctx context.Context, arg ChunkedCreateParams) (i
 		arg.Name,
 		arg.IpAddr,
 		arg.ChunksLeft,
+		arg.ChunksTotal,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -48,9 +52,33 @@ func (q *Queries) ChunkedDelete(ctx context.Context, id int32) error {
 	return err
 }
 
+const chunkedFromId = `-- name: ChunkedFromId :one
+SELECT file_size, chunks_total, created_at, last_access FROM chunked
+WHERE id = $1
+`
+
+type ChunkedFromIdRow struct {
+	FileSize    int64
+	ChunksTotal int32
+	CreatedAt   pgtype.Timestamp
+	LastAccess  pgtype.Timestamp
+}
+
+func (q *Queries) ChunkedFromId(ctx context.Context, id int32) (ChunkedFromIdRow, error) {
+	row := q.db.QueryRow(ctx, chunkedFromId, id)
+	var i ChunkedFromIdRow
+	err := row.Scan(
+		&i.FileSize,
+		&i.ChunksTotal,
+		&i.CreatedAt,
+		&i.LastAccess,
+	)
+	return i, err
+}
+
 const chunkedLeftDecrement = `-- name: ChunkedLeftDecrement :one
 UPDATE chunked
-SET chunks_left = GREATEST(0, chunks_left - 1)
+SET chunks_left = GREATEST(0, chunks_left - 1), last_access = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING chunks_left
 `
@@ -60,6 +88,27 @@ func (q *Queries) ChunkedLeftDecrement(ctx context.Context, id int32) (int32, er
 	var chunks_left int32
 	err := row.Scan(&chunks_left)
 	return chunks_left, err
+}
+
+const chunkedToFile = `-- name: ChunkedToFile :one
+INSERT INTO files (mime_type, file_size, name, ip_addr, hash)
+SELECT $2, chunked.file_size, chunked.name, chunked.ip_addr, $3 
+FROM chunked
+WHERE chunked.id = $1
+RETURNING files.id
+`
+
+type ChunkedToFileParams struct {
+	ID       int32
+	MimeType string
+	Hash     string
+}
+
+func (q *Queries) ChunkedToFile(ctx context.Context, arg ChunkedToFileParams) (int32, error) {
+	row := q.db.QueryRow(ctx, chunkedToFile, arg.ID, arg.MimeType, arg.Hash)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const fileCreate = `-- name: FileCreate :one
