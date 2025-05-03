@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
-	"net/netip"
 	"os"
 	"path"
 
@@ -47,7 +45,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	row, err := server.queries.GetFileFromHash(context.Background(), hash)
+	row, err := server.queries.FileFromHash(context.Background(), hash)
 	if err == nil {
 		fileId56 := base56.Encode(uint64(row.ID))
 		fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
@@ -63,22 +61,18 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ipAddrString, _, _ := net.SplitHostPort(req.RemoteAddr)
-	if value := req.Header.Get("X-Forwarded-For"); value != "" {
-		ipAddrString = value
-	}
-	ipAddr, err := netip.ParseAddr(ipAddrString)
+	ipAddr, err := ipFromReq(req)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error parsing ip:", err)
 		return
 	}
 
-	fileId, err := server.queries.CreateFile(context.Background(), db.CreateFileParams{
+	fileId, err := server.queries.FileCreate(context.Background(), db.FileCreateParams{
 		MimeType: mtype.String(),
 		Name:     header.Filename,
 		FileSize: header.Size,
-		IpAddr:   ipAddr,
+		IpAddr:   *ipAddr,
 		Hash:     hash,
 	})
 	if err != nil {
@@ -93,7 +87,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 
 	dst, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		server.queries.DeleteFile(context.Background(), fileId)
+		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error creating file:", err)
 		return
@@ -103,7 +97,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	file.Seek(0, 0)
 	_, err = io.Copy(dst, file)
 	if err != nil {
-		server.queries.DeleteFile(context.Background(), fileId)
+		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error copying file:", err)
 		return
@@ -111,13 +105,4 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 
 	fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
 	return
-}
-
-func uploadChunkedStart(rw http.ResponseWriter, r *http.Request) {
-}
-
-func uploadChunkedProgress(rw http.ResponseWriter, r *http.Request) {
-}
-
-func uploadChunkedCancel(rw http.ResponseWriter, r *http.Request) {
 }

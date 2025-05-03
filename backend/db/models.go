@@ -10,6 +10,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Chunked struct {
+	ID         int32
+	CreatedAt  pgtype.Timestamp
+	LastAccess pgtype.Timestamp
+	FileSize   int64
+	IpAddr     netip.Addr
+	ChunksLeft int32
+	Name       string
+}
+
 type File struct {
 	ID         int32
 	CreatedAt  pgtype.Timestamp

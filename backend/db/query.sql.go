@@ -10,7 +10,59 @@ import (
 	"net/netip"
 )
 
-const createFile = `-- name: CreateFile :one
+const chunkedCreate = `-- name: ChunkedCreate :one
+INSERT INTO chunked (
+  file_size, name, ip_addr, chunks_left
+) VALUES (
+  $1, $2, $3, $4
+)
+RETURNING id
+`
+
+type ChunkedCreateParams struct {
+	FileSize   int64
+	Name       string
+	IpAddr     netip.Addr
+	ChunksLeft int32
+}
+
+func (q *Queries) ChunkedCreate(ctx context.Context, arg ChunkedCreateParams) (int32, error) {
+	row := q.db.QueryRow(ctx, chunkedCreate,
+		arg.FileSize,
+		arg.Name,
+		arg.IpAddr,
+		arg.ChunksLeft,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
+const chunkedDelete = `-- name: ChunkedDelete :exec
+DELETE FROM chunked
+WHERE id = $1
+`
+
+func (q *Queries) ChunkedDelete(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, chunkedDelete, id)
+	return err
+}
+
+const chunkedLeftDecrement = `-- name: ChunkedLeftDecrement :one
+UPDATE chunked
+SET chunks_left = GREATEST(0, chunks_left - 1)
+WHERE id = $1
+RETURNING chunks_left
+`
+
+func (q *Queries) ChunkedLeftDecrement(ctx context.Context, id int32) (int32, error) {
+	row := q.db.QueryRow(ctx, chunkedLeftDecrement, id)
+	var chunks_left int32
+	err := row.Scan(&chunks_left)
+	return chunks_left, err
+}
+
+const fileCreate = `-- name: FileCreate :one
 INSERT INTO files (
   mime_type, file_size, name, ip_addr, hash
 ) VALUES (
@@ -19,7 +71,7 @@ INSERT INTO files (
 RETURNING id
 `
 
-type CreateFileParams struct {
+type FileCreateParams struct {
 	MimeType string
 	FileSize int64
 	Name     string
@@ -27,8 +79,8 @@ type CreateFileParams struct {
 	Hash     string
 }
 
-func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (int32, error) {
-	row := q.db.QueryRow(ctx, createFile,
+func (q *Queries) FileCreate(ctx context.Context, arg FileCreateParams) (int32, error) {
+	row := q.db.QueryRow(ctx, fileCreate,
 		arg.MimeType,
 		arg.FileSize,
 		arg.Name,
@@ -40,29 +92,29 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (int32, 
 	return id, err
 }
 
-const deleteFile = `-- name: DeleteFile :exec
+const fileDelete = `-- name: FileDelete :exec
 DELETE FROM files
 WHERE id = $1
 `
 
-func (q *Queries) DeleteFile(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, deleteFile, id)
+func (q *Queries) FileDelete(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, fileDelete, id)
 	return err
 }
 
-const getFileFromHash = `-- name: GetFileFromHash :one
+const fileFromHash = `-- name: FileFromHash :one
 SELECT id, mime_type FROM files
 WHERE hash = $1
 `
 
-type GetFileFromHashRow struct {
+type FileFromHashRow struct {
 	ID       int32
 	MimeType string
 }
 
-func (q *Queries) GetFileFromHash(ctx context.Context, hash string) (GetFileFromHashRow, error) {
-	row := q.db.QueryRow(ctx, getFileFromHash, hash)
-	var i GetFileFromHashRow
+func (q *Queries) FileFromHash(ctx context.Context, hash string) (FileFromHashRow, error) {
+	row := q.db.QueryRow(ctx, fileFromHash, hash)
+	var i FileFromHashRow
 	err := row.Scan(&i.ID, &i.MimeType)
 	return i, err
 }

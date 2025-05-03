@@ -1,1 +1,6 @@
+BEGIN;
+
 DROP TABLE files;
+DROP TABLE chunks;
+
+COMMIT;

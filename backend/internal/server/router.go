@@ -16,21 +16,21 @@ var server struct {
 	cfg     config.ServerConfig
 
 	storagePath string
-	partialPath string
+	chunkedPath string
 }
 
 func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	server.queries = queries
 	server.cfg = cfg
 	server.storagePath = path.Join(cfg.Data, "storage")
-	server.partialPath = path.Join(cfg.Data, "partial")
+	server.chunkedPath = path.Join(cfg.Data, "chunked")
 
 	err := os.MkdirAll(server.storagePath, 0700)
 	if err != nil {
 		log.Println("Error creating directory: ", err)
 		return err
 	}
-	err = os.MkdirAll(server.partialPath, 0700)
+	err = os.MkdirAll(server.chunkedPath, 0700)
 	if err != nil {
 		log.Println("Error creating directory: ", err)
 		return err

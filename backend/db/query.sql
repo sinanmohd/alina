@@ -1,4 +1,4 @@
--- name: CreateFile :one
+-- name: FileCreate :one
 INSERT INTO files (
   mime_type, file_size, name, ip_addr, hash
 ) VALUES (
@@ -6,10 +6,28 @@ INSERT INTO files (
 )
 RETURNING id;
 
--- name: GetFileFromHash :one
+-- name: ChunkedCreate :one
+INSERT INTO chunked (
+  file_size, name, ip_addr, chunks_left
+) VALUES (
+  $1, $2, $3, $4
+)
+RETURNING id;
+
+-- name: ChunkedLeftDecrement :one
+UPDATE chunked
+SET chunks_left = GREATEST(0, chunks_left - 1)
+WHERE id = $1
+RETURNING chunks_left;
+
+-- name: ChunkedDelete :exec
+DELETE FROM chunked
+WHERE id = $1;
+
+-- name: FileFromHash :one
 SELECT id, mime_type FROM files
 WHERE hash = $1;
 
--- name: DeleteFile :exec
+-- name: FileDelete :exec
 DELETE FROM files
 WHERE id = $1;

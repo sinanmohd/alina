@@ -10,10 +10,13 @@ import (
 )
 
 type ServerConfig struct {
-	Host      string `toml:"host"`
-	Port      uint   `toml:"port"`
-	Data      string `toml:"data"`
-	PublicUrl string `toml:"public_url"`
+	Host          string `toml:"host"`
+	Port          uint   `toml:"port"`
+	Data          string `toml:"data"`
+	PublicUrl     string `toml:"public_url"`
+	FileSizeLimit int    `toml:"file_size_limit"`
+	ChunkSize     int    `toml:"chunk_size"`
+	SecretKey     string `toml:"secret_key"`
 }
 type DatabaseConfig struct {
 	Url string `toml:"url"`
@@ -26,10 +29,13 @@ type Config struct {
 func New() (*Config, error) {
 	var config Config = Config{
 		Server: ServerConfig{
-			Host:      "localhost",
-			Port:      8008,
-			Data:      "alina_data",
-			PublicUrl: "http://localhost",
+			Host:          "localhost",
+			Port:          8008,
+			Data:          "alina_data",
+			PublicUrl:     "http://localhost",
+			FileSizeLimit: 134217728,
+			ChunkSize:     1048576,
+			SecretKey:     "change-me-for-dev-only",
 		},
 		Db: DatabaseConfig{
 			Url: "postgresql:///alina?user=alina&host=/var/run/postgresql",
