@@ -7,33 +7,62 @@ package db
 
 import (
 	"context"
+	"net/netip"
 )
 
-const createFile = `-- name: CreateFile :exec
+const createFile = `-- name: CreateFile :one
 INSERT INTO files (
-  mime_type, file_size, name
+  mime_type, file_size, name, ip_addr, hash
 ) VALUES (
-  ?, ?, ?
+  $1, $2, $3, $4, $5
 )
-RETURNING id, created_at, last_access, mime_type, file_size, name
+RETURNING id
 `
 
 type CreateFileParams struct {
 	MimeType string
 	FileSize int64
 	Name     string
+	IpAddr   netip.Addr
+	Hash     string
 }
 
-func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) error {
-	_, err := q.db.ExecContext(ctx, createFile, arg.MimeType, arg.FileSize, arg.Name)
-	return err
+func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (int32, error) {
+	row := q.db.QueryRow(ctx, createFile,
+		arg.MimeType,
+		arg.FileSize,
+		arg.Name,
+		arg.IpAddr,
+		arg.Hash,
+	)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteFile = `-- name: DeleteFile :exec
-DELETE FROM files WHERE id = ?
+DELETE FROM files
+WHERE id = $1
 `
 
-func (q *Queries) DeleteFile(ctx context.Context, id interface{}) error {
-	_, err := q.db.ExecContext(ctx, deleteFile, id)
+func (q *Queries) DeleteFile(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteFile, id)
 	return err
+}
+
+const getFileFromHash = `-- name: GetFileFromHash :one
+SELECT id, mime_type FROM files
+WHERE hash = $1
+`
+
+type GetFileFromHashRow struct {
+	ID       int32
+	MimeType string
+}
+
+func (q *Queries) GetFileFromHash(ctx context.Context, hash string) (GetFileFromHashRow, error) {
+	row := q.db.QueryRow(ctx, getFileFromHash, hash)
+	var i GetFileFromHashRow
+	err := row.Scan(&i.ID, &i.MimeType)
+	return i, err
 }

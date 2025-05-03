@@ -14,11 +14,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	queries, db, err := db.NewWithSetup(cfg.Db)
+	queries, pool, err := db.NewWithSetup(cfg.Db)
 	if err != nil {
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer pool.Close()
 
-	server.Run(cfg.Server, queries)
+	err = server.Run(cfg.Server, queries)
+	if err != nil {
+		os.Exit(1)
+	}
 }

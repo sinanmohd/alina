@@ -10,8 +10,10 @@ import (
 )
 
 type ServerConfig struct {
-	Host string `toml:"host"`
-	Port uint   `toml:"port"`
+	Host      string `toml:"host"`
+	Port      uint   `toml:"port"`
+	Data      string `toml:"data"`
+	PublicUrl string `toml:"public_url"`
 }
 type DatabaseConfig struct {
 	Url string `toml:"url"`
@@ -24,8 +26,10 @@ type Config struct {
 func New() (*Config, error) {
 	var config Config = Config{
 		Server: ServerConfig{
-			Host: "localhost",
-			Port: 8008,
+			Host:      "localhost",
+			Port:      8008,
+			Data:      "alina_data",
+			PublicUrl: "http://localhost",
 		},
 		Db: DatabaseConfig{
 			Url: "postgresql:///alina?user=alina&host=/var/run/postgresql",
@@ -61,6 +65,7 @@ func New() (*Config, error) {
 
 	flag.StringVar(&config.Server.Host, "server-host", config.Server.Host, "Bind host for alina")
 	flag.UintVar(&config.Server.Port, "server-port", config.Server.Port, "Bind port for alina")
+	flag.StringVar(&config.Server.PublicUrl, "server-public-url", config.Server.PublicUrl, "Public URL for alina")
 	flag.StringVar(&config.Db.Url, "db-url", config.Db.Url, "Database URL")
 	flag.Parse()
 

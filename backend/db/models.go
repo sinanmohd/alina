@@ -5,14 +5,18 @@
 package db
 
 import (
-	"time"
+	"net/netip"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type File struct {
-	ID         interface{}
-	CreatedAt  time.Time
-	LastAccess time.Time
+	ID         int32
+	CreatedAt  pgtype.Timestamp
+	LastAccess pgtype.Timestamp
 	MimeType   string
 	FileSize   int64
+	IpAddr     netip.Addr
+	Hash       string
 	Name       string
 }
