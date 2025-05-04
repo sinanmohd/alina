@@ -72,6 +72,7 @@ func New() (*Config, error) {
 	flag.StringVar(&config.Server.Host, "server-host", config.Server.Host, "Bind host for alina")
 	flag.UintVar(&config.Server.Port, "server-port", config.Server.Port, "Bind port for alina")
 	flag.StringVar(&config.Server.PublicUrl, "server-public-url", config.Server.PublicUrl, "Public URL for alina")
+	flag.StringVar(&config.Server.Data, "server-data", config.Server.Data, "Data directory for alina")
 	flag.StringVar(&config.Db.Url, "db-url", config.Db.Url, "Database URL")
 	flag.Parse()
 

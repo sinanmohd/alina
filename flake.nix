@@ -20,10 +20,12 @@
           go
           gopls
           sqlc
+          air
+
+          nixfmt-rfc-style
 
           nodejs
           vue-language-server
-          nixfmt-rfc-style
           tailwindcss-language-server
         ];
 	shellHook = ''
