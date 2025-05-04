@@ -30,11 +30,9 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 		log.Println("Error creating directory: ", err)
 		return err
 	}
-	err = os.MkdirAll(server.chunkedPath, 0700)
-	if err != nil {
-		log.Println("Error creating directory: ", err)
-		return err
-	}
+
+	fs := http.FileServer(http.Dir(server.storagePath))
+	http.Handle("GET /", fs)
 
 	http.HandleFunc("POST /", uploadSimple)
 	http.HandleFunc("POST /_alina/upload/simple", uploadSimple)

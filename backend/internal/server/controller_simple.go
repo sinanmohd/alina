@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	"golang.org/x/crypto/blake2b"
@@ -54,6 +55,12 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error seeking file:", err)
+		return
+	}
 	mtype, err := mimetype.DetectReader(file)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -69,7 +76,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	fileId, err := server.queries.FileCreate(context.Background(), db.FileCreateParams{
-		MimeType: mtype.String(),
+		MimeType: strings.Split(mtype.String(), ";")[0],
 		Name:     header.Filename,
 		FileSize: header.Size,
 		IpAddr:   *ipAddr,
@@ -94,7 +101,14 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	}
 	defer dst.Close()
 
-	file.Seek(0, 0)
+
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		server.queries.FileDelete(context.Background(), fileId)
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error seeking file:", err)
+		return
+	}
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		server.queries.FileDelete(context.Background(), fileId)

@@ -32,7 +32,7 @@ func New() (*Config, error) {
 			Host:          "localhost",
 			Port:          8008,
 			Data:          "alina_data",
-			PublicUrl:     "http://localhost",
+			PublicUrl:     "http://localhost:8008",
 			FileSizeLimit: 134217728,
 			ChunkSize:     1048576,
 			SecretKey:     "change-me-for-dev-only",
