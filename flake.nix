@@ -26,6 +26,7 @@
 
           nodejs
           vue-language-server
+          typescript-language-server
           tailwindcss-language-server
         ];
 	shellHook = ''

@@ -1,6 +1,75 @@
 <script setup lang="ts">
-import { formatBytes } from '~/lib/utils';
 import { toast } from 'vue-sonner';
+
+const { formatBytes } = useUtils();
+const files = useState<any[]>('files', () => []);
+const isDragging = ref(false);
+const isUploading = ref(false);
+const uploadInput = useTemplateRef('uploadInput');
+const fileTotalBytes = useState<number>('fileTotalBytes', () => 0);
+
+function upload() {
+  if (files.value.length === 0) {
+    toast('No Files Selected', {
+      description: 'Please select one or more files to proceed',
+    })
+
+    return
+  } else if (isUploading.value) {
+    toast('Upload in Progress', {
+      description: 'Please wait until the current upload is complete',
+    })
+
+    return
+  }
+
+  isUploading.value = true;
+
+  setTimeout(() => {
+    files.value.length = 0;
+    isUploading.value = false;
+  }, 3000);
+}
+
+function filesAdd(flist: FileList | null | undefined) {
+  if (!flist) {
+    return;
+  }
+
+  for (const file of flist) {
+    if (files.value.find((item) => item.name == file.name)) {
+      continue;
+    }
+
+    files.value = [...files.value, file];
+  }
+
+  fileTotalBytes.value = 0;
+  for (const file of files.value) {
+    fileTotalBytes.value += file.size;
+  }
+}
+function filesRm(index: number) {
+  fileTotalBytes.value -= files.value[index].size;
+  files.value.splice(index, 1);
+}
+
+function drop(event: DragEvent) {
+  event.preventDefault();
+  isDragging.value = false;
+  filesAdd(event.dataTransfer?.files);
+}
+function dragover(event: DragEvent) {
+  event.preventDefault();
+  isDragging.value = true;
+}
+function dragleave() {
+  isDragging.value = false;
+}
+function addInput(event: Event) {
+  const el = event.target as HTMLInputElement;
+  filesAdd(el.files);
+}
 </script>
 
 <template>
@@ -15,7 +84,7 @@ import { toast } from 'vue-sonner';
       <input ref="uploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
       <div v-if="isUploading" class="h-56 border-2 rounded-lg">
       </div>
-      <div v-else @click="clickUploadInput" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
+      <div v-else @click="uploadInput?.click()" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
         <div class="mx-auto">
           <div class="w-min mx-auto">
             <Icon v-if="isDragging" name="mdi:add" class="text-7xl text-muted-foreground"/>
@@ -33,7 +102,7 @@ import { toast } from 'vue-sonner';
           {{ files.length }} files selected
         </div>
         <div>
-          {{ formatBytes(totalBytes)}} in total
+          {{ formatBytes(fileTotalBytes)}} in total
         </div>
       </div>
       <div v-for="(file, index) in files"q class="border rounded-lg p-2 flex justify-between gap-2">
@@ -59,82 +128,3 @@ import { toast } from 'vue-sonner';
     </CardFooter>
   </Card>
 </template>
-
-<script lang="ts">
-export default {
-  data() {
-    return {
-      isDragging: false,
-      isUploading: false,
-      totalBytes: 0,
-      files: new Array(),
-    };
-  },
-  methods: {
-    upload() {
-      if (this.files.length === 0) {
-        toast('No Files Selected', {
-          description: 'Please select one or more files to proceed',
-        })
-
-        return
-      } else if (this.isUploading) {
-        toast('Upload in Progress', {
-          description: 'Please wait until the current upload is complete',
-        })
-
-        return
-      }
-
-      this.isUploading = true;
-
-      setTimeout(() => {
-        this.files = new Array();
-        this.isUploading = false;
-      }, 3000);
-    },
-    filesAdd(files: FileList | null | undefined) {
-      if (!files) {
-        return;
-      }
-
-      for (const file of files) {
-        if (this.files.find((item) => item.name == file.name)) {
-          continue;
-        }
-
-        this.files = [...this.files, file];
-      }
-
-      this.totalBytes = 0;
-      for (const file of this.files) {
-        this.totalBytes += file.size;
-      }
-    },
-    filesRm(index: number) {
-      this.totalBytes -= this.files[index].size;
-      this.files.splice(index, 1);
-    },
-    drop(event: DragEvent) {
-      event.preventDefault();
-      this.isDragging = false;
-      this.filesAdd(event.dataTransfer?.files);
-    },
-    dragover(event: DragEvent) {
-      event.preventDefault();
-      this.isDragging = true;
-    },
-    dragleave() {
-      this.isDragging = false;
-    },
-    addInput(event: Event) {
-      const el = event.target as HTMLInputElement;
-      this.filesAdd(el.files);
-    },
-    clickUploadInput() {
-      const el = this.$refs.uploadInput as HTMLInputElement;
-      el.click();
-    }
-  }
-}
-</script>
