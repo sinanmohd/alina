@@ -13,19 +13,11 @@ Your awesome frenly neighbourhood file sharing website.
 
 # features
 
-- Traditional top-loading design with a hinged lid for loading laundry from the top  
-- Simple manual controls operated using rotary dials or mechanical timers  
-- Central agitator mechanism to move clothes through soapy water during wash cycle  
-- Built-in or detachable wringer rollers used to manually squeeze out excess water  
-- Single metal washtub used for both washing and rinsing clothes  
-- Durable enamel-coated steel housing designed to resist rust and damage  
-- Limited selection of basic wash and rinse cycles with no customization options  
-- Dual hot and cold water inlet valves allowing manual temperature adjustment  
-- Manual drainage system using a hose or gravity to remove used water  
-- Basic spin function or absence of spinning, requiring manual wringing of clothes  
-- No compartment or dispenser for automatic detergent release during cycle  
-- Fully mechanical operation with no digital sensors or electronic components  
-- Large, heavy construction with solid metal parts making it difficult to move
+- Pause, resume, and retry uploads effortlessly.
+- Upload files directly from the terminal.
+- Secure chunked uploads with JWT without requiring a login.
+- Parallel accelerated chunked uploads.
+- Sleek, user-friendly interface.
 - and much more...
 
 # gallery
@@ -34,21 +26,18 @@ Your awesome frenly neighbourhood file sharing website.
 
 # special thanks
 
-**[Glass Shelf]** - *For breaking my arm so i have free time to do this*
-
 **[Tailwind, Nuxt, Shadcn]** - *For helping with frontend*
 
 **[Nix, Go]** - *For being cool*
 
-**[Hyprland]** - *For this readme*
+**[Glass Shelf]** - *For breaking my arm so i have free time to do this*
 
 
 <!----------------------------------{ Thanks }--------------------------------->
 
-[Glass Shelf]: https://www.amazon.com/SAYAYO-Floating-Shelves-Tempered-Bathroom/dp/B0CGXB13CR
 [Tailwind, Nuxt, Shadcn]: https://tailwindcss.com/
 [Nix, Go]: https://nixos.org/
-[Hyprland]: https://hyprland.org/
+[Glass Shelf]: https://www.amazon.com/SAYAYO-Floating-Shelves-Tempered-Bathroom/dp/B0CGXB13CR
 
 <!----------------------------------{ Images }--------------------------------->
 
