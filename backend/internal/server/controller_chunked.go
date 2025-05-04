@@ -38,6 +38,10 @@ type ChunkedJwtClaims struct {
 	jwt.RegisteredClaims
 }
 
+type ChunkedCancelReq struct {
+	ChunkToken string `json:"chunk_token" validate:"required"`
+}
+
 func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 	var data ChunkedStartReq
 
@@ -341,5 +345,48 @@ func fileCloseAndRemove(file *os.File, path string) {
 	}
 }
 
-func uploadChunkedCancel(rw http.ResponseWriter, r *http.Request) {
+func uploadChunkedCancel(rw http.ResponseWriter, req *http.Request) {
+	var data ChunkedCancelReq
+
+	err := json.NewDecoder(req.Body).Decode(&data)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	err = validator.New().Struct(data)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var claims ChunkedJwtClaims
+	_, err = jwt.ParseWithClaims(data.ChunkToken, &claims, func(token *jwt.Token) (any, error) {
+		return []byte(server.cfg.SecretKey), nil
+	})
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	err = server.queries.ChunkedDelete(context.Background(), claims.ChunkedId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(rw, http.StatusText(http.StatusGone), http.StatusGone)
+			return
+		} else {
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			log.Println("Error querying db:", err)
+			return
+		}
+	}
+
+	chunkDir := path.Join(server.chunkedPath, fmt.Sprint(claims.ChunkedId))
+	err = os.RemoveAll(chunkDir)
+	if err != nil {
+		// scheduled cleanup will catch this even if it fails
+		log.Println("Error removing chunkDir:", err)
+	}
+
+	return
 }

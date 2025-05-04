@@ -101,7 +101,6 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	}
 	defer dst.Close()
 
-
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		server.queries.FileDelete(context.Background(), fileId)
