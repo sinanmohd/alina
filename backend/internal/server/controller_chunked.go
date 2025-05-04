@@ -105,8 +105,8 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	var claims ChunkedJwtClaims
-	_, err = jwt.ParseWithClaims(req.FormValue("chunk_token"), claims, func(token *jwt.Token) (any, error) {
-		return server.cfg.SecretKey, nil
+	_, err = jwt.ParseWithClaims(req.FormValue("chunk_token"), &claims, func(token *jwt.Token) (any, error) {
+		return []byte(server.cfg.SecretKey), nil
 	})
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -143,7 +143,7 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	chunk, header, err := req.FormFile("file")
+	chunk, header, err := req.FormFile("chunk")
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -194,15 +194,20 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 		os.Remove(chunkPath)
 		return
 	}
-	if chunksLeft == 0 {
 
+	if chunksLeft == 0 {
+		err := ChunkedToFile(claims.ChunkedId, int(row.ChunksTotal), rw)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			os.Remove(chunkPath)
+			return
+		}
 	}
 
 	return
 }
 
 func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) error {
-
 	chunkDir := path.Join(server.chunkedPath, fmt.Sprint(chunkedId))
 	chunkFullFilePath := path.Join(chunkDir, "fullfile")
 	fullFile, err := os.OpenFile(chunkFullFilePath, os.O_WRONLY|os.O_CREATE, 0600)
@@ -212,13 +217,11 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 	}
 
 	for chunkIndex := 1; chunkIndex <= chunksTotal; chunkIndex++ {
-		chunkPath := path.Join(server.chunkedPath, fmt.Sprint(chunkIndex))
+		chunkPath := path.Join(chunkDir, fmt.Sprint(chunkIndex))
 		chunk, err := os.Open(chunkPath)
 		if err != nil {
-			log.Println("Error creating file:", err)
+			log.Println("Error opening file:", err)
 			fileCloseAndRemove(fullFile, chunkFullFilePath)
-			fullFile.Close()
-			os.Remove(chunkFullFilePath)
 			return err
 		}
 		_, err = io.Copy(fullFile, chunk)
@@ -254,10 +257,12 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		return nil
 	}
 
-	fullFile.Seek(0, 0)
+	fullFile.Seek(0, io.SeekStart)
 	mtype, err := mimetype.DetectReader(fullFile)
+	fullFile.Close()
 	if err != nil {
 		log.Println("Error detecting mimetype:", err)
+		os.Remove(chunkFullFilePath)
 		return err
 	}
 	fileId, err := server.queries.ChunkedToFile(context.Background(), db.ChunkedToFileParams{
@@ -266,14 +271,28 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		ID:       chunkedId,
 	})
 	if err != nil {
-		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		os.Remove(chunkFullFilePath)
 		log.Println("Error querying db:", err)
 		return err
 	}
+
 	fileId56 := base56.Encode(uint64(fileId))
 	fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
 	filePath := path.Join(server.storagePath, fileName)
-	os.Rename(chunkFullFilePath, filePath)
+	err = os.Rename(chunkFullFilePath, filePath)
+	if err != nil {
+		os.Remove(chunkFullFilePath)
+		log.Println("Error moving file:", err)
+
+		err = server.queries.FileDelete(context.Background(), fileId)
+		if err != nil {
+			os.Remove(chunkFullFilePath)
+			log.Println("Error querying db:", err)
+			return err
+		}
+
+		return err
+	}
 
 	fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
 	return nil
