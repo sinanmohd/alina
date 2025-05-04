@@ -93,9 +93,15 @@ func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 		ChunkToken: chunkToken,
 	})
 	if err != nil {
-		server.queries.ChunkedDelete(context.Background(), chunkedId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error marshaling response:", err)
+
+		err := server.queries.ChunkedDelete(context.Background(), chunkedId)
+		if err != nil {
+			// scheduled cleanup will catch this even if it fails
+			log.Println("Error querying db:", err)
+		}
+
 		return
 	}
 

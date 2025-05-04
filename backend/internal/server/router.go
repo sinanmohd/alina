@@ -34,6 +34,8 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	fs := http.FileServer(http.Dir(server.storagePath))
 	http.Handle("GET /", fs)
 
+	http.HandleFunc("GET /_alina/config", publicConfig)
+
 	http.HandleFunc("POST /", uploadSimple)
 	http.HandleFunc("POST /_alina/upload/simple", uploadSimple)
 
