@@ -20,6 +20,7 @@ var server struct {
 }
 
 func Run(cfg config.ServerConfig, queries *db.Queries) error {
+	mux := http.NewServeMux()
 	server.queries = queries
 	server.cfg = cfg
 	server.storagePath = path.Join(cfg.Data, "storage")
@@ -31,21 +32,31 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 		return err
 	}
 
-	fs := http.FileServer(http.Dir(server.storagePath))
-	http.Handle("GET /", fs)
+	fs := middleware(http.FileServer(http.Dir(server.storagePath)))
+	mux.Handle("GET /", fs)
+	mux.Handle("GET /files/", http.StripPrefix("/files/", fs))
 
-	http.HandleFunc("GET /_alina/config", publicConfig)
+	publicConfigHandler := middleware(http.HandlerFunc(publicConfig))
+	mux.Handle("GET /_alina/config", publicConfigHandler)
 
-	http.HandleFunc("POST /", uploadSimple)
-	http.HandleFunc("POST /_alina/upload/simple", uploadSimple)
+	uploadSimpleHandler := middleware(http.HandlerFunc(uploadSimple))
+	mux.Handle("POST /", uploadSimpleHandler)
+	mux.Handle("POST /_alina/upload/simple", uploadSimpleHandler)
 
-	http.HandleFunc("PUT /_alina/upload/chunked", uploadChunkedStart)
-	http.HandleFunc("PATCH /_alina/upload/chunked", uploadChunkedProgress)
-	http.HandleFunc("DELETE /_alina/upload/chunked", uploadChunkedCancel)
+	uploadChunkedStartHandler := middleware(http.HandlerFunc(uploadChunkedStart))
+	uploadChunkedProgressHandler := middleware(http.HandlerFunc(uploadChunkedProgress))
+	uploadChunkedCancelHandler := middleware(http.HandlerFunc(uploadChunkedCancel))
+	mux.Handle("PUT /_alina/upload/chunked", uploadChunkedStartHandler)
+	mux.Handle("PATCH /_alina/upload/chunked", uploadChunkedProgressHandler)
+	mux.Handle("DELETE /_alina/upload/chunked", uploadChunkedCancelHandler)
 
 	bindAddr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)
 	log.Printf("alina is listening on http://%v\n", bindAddr)
-	http.ListenAndServe(bindAddr, nil)
+	err = http.ListenAndServe(bindAddr, mux)
+	if err != nil {
+		log.Println("Error serving http: ", err)
+		return err
+	}
 
 	return nil
 }

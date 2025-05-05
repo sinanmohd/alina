@@ -3,7 +3,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = ["--server-data=tmp/alina_data"]
+  args_bin = ["--data=tmp/alina_data", "--cors-allow-all=true"]
   bin = "./tmp/main"
   cmd = "go build -o ./tmp/main cmd/alina/main.go"
   delay = 1000

@@ -17,6 +17,7 @@ type ServerConfig struct {
 	FileSizeLimit int    `toml:"file_size_limit"`
 	ChunkSize     int    `toml:"chunk_size"`
 	SecretKey     string `toml:"secret_key"`
+	CorsAllowAll  bool   `toml:"cors_allow_all"`
 }
 type DatabaseConfig struct {
 	Url string `toml:"url"`
@@ -36,6 +37,7 @@ func New() (*Config, error) {
 			FileSizeLimit: 134217728,
 			ChunkSize:     1048576,
 			SecretKey:     "change-me-for-dev-only",
+			CorsAllowAll:  false,
 		},
 		Db: DatabaseConfig{
 			Url: "postgresql:///alina?user=alina&host=/var/run/postgresql",
@@ -69,10 +71,11 @@ func New() (*Config, error) {
 		}
 	}
 
-	flag.StringVar(&config.Server.Host, "server-host", config.Server.Host, "Bind host for alina")
-	flag.UintVar(&config.Server.Port, "server-port", config.Server.Port, "Bind port for alina")
-	flag.StringVar(&config.Server.PublicUrl, "server-public-url", config.Server.PublicUrl, "Public URL for alina")
-	flag.StringVar(&config.Server.Data, "server-data", config.Server.Data, "Data directory for alina")
+	flag.StringVar(&config.Server.Host, "host", config.Server.Host, "Bind host for alina")
+	flag.UintVar(&config.Server.Port, "port", config.Server.Port, "Bind port for alina")
+	flag.StringVar(&config.Server.PublicUrl, "public-url", config.Server.PublicUrl, "Public URL for alina")
+	flag.StringVar(&config.Server.Data, "data", config.Server.Data, "Data directory for alina")
+	flag.BoolVar(&config.Server.CorsAllowAll, "cors-allow-all", config.Server.CorsAllowAll, "Allow requsts from all cors origins")
 	flag.StringVar(&config.Db.Url, "db-url", config.Db.Url, "Database URL")
 	flag.Parse()
 
