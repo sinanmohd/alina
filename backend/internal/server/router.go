@@ -32,6 +32,15 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 		return err
 	}
 
+	if cfg.CorsAllowAll {
+		corsOptionsHandler := middleware(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			rw.Header().Set("Access-Control-Allow-Methods", "*")
+			rw.Header().Set("Access-Control-Allow-Headers", "*")
+		}))
+
+		mux.Handle("OPTIONS /", corsOptionsHandler)
+	}
+
 	fs := middleware(http.FileServer(http.Dir(server.storagePath)))
 	mux.Handle("GET /", fs)
 	mux.Handle("GET /files/", http.StripPrefix("/files/", fs))
@@ -46,7 +55,7 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	uploadChunkedStartHandler := middleware(http.HandlerFunc(uploadChunkedStart))
 	uploadChunkedProgressHandler := middleware(http.HandlerFunc(uploadChunkedProgress))
 	uploadChunkedCancelHandler := middleware(http.HandlerFunc(uploadChunkedCancel))
-	mux.Handle("PUT /_alina/upload/chunked", uploadChunkedStartHandler)
+	mux.Handle("POST /_alina/upload/chunked", uploadChunkedStartHandler)
 	mux.Handle("PATCH /_alina/upload/chunked", uploadChunkedProgressHandler)
 	mux.Handle("DELETE /_alina/upload/chunked", uploadChunkedCancelHandler)
 

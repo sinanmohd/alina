@@ -17,6 +17,7 @@ Your awesome frenly neighbourhood file sharing website.
 - Upload files directly from the terminal.
 - Secure chunked uploads with JWT without requiring a login.
 - Parallel accelerated chunked uploads.
+- Merges duplicate files to save space.
 - Sleek, user-friendly interface.
 - and much more...
 

@@ -30,12 +30,12 @@ type Config struct {
 func New() (*Config, error) {
 	var config Config = Config{
 		Server: ServerConfig{
-			Host:          "localhost",
+			Host:          "[::]",
 			Port:          8008,
 			Data:          "alina_data",
 			PublicUrl:     "http://localhost:8008",
-			FileSizeLimit: 134217728,
-			ChunkSize:     1048576,
+			FileSizeLimit: 1024 * 1024 * 1024 * 64,
+			ChunkSize:     1024 * 1024, // 1MB
 			SecretKey:     "change-me-for-dev-only",
 			CorsAllowAll:  false,
 		},

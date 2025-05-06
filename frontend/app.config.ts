@@ -1,3 +1,3 @@
 export default defineAppConfig({
-  serverUrl: 'http://localhost:8080'
+  serverUrl: 'http://192.168.43.119:8008'
 })

@@ -105,6 +105,7 @@ func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(rw, string(resp))
 	return
 }
@@ -162,7 +163,7 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 	}
 	defer chunk.Close()
 	if int32(chunkIndex) == row.ChunksTotal {
-		if header.Size != row.FileSize%int64(server.cfg.FileSizeLimit) {
+		if header.Size != row.FileSize%int64(server.cfg.ChunkSize) {
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}

@@ -25,6 +25,7 @@ func publicConfig(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	rw.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(rw, string(resp))
 	return
 }

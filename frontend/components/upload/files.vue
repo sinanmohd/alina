@@ -1,34 +1,161 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
-const { formatBytes } = useUtils();
-const files = useState<any[]>('files', () => []);
+const { formatBytes, filesZip, chunksFromBlob: chunksFromFile } = useUtils();
+const files = useState<File[]>('files', () => []);
 const isDragging = ref(false);
-const isUploading = ref(false);
-const uploadInput = useTemplateRef('uploadInput');
+const isUploading = useState('filesIsUploading', () => false);
+const isZipping = useState('filesIsZipping', () => false);
+const isPaused = useState('filesIsPaused', () => false);
+const fileUploadLink = useState<string>('fileUploadLink');
+const fileUploadDialog = defineModel<boolean>('fileUploadDialog')
+const uploadInput = useTemplateRef('fileUploadInput');
 const fileTotalBytes = useState<number>('fileTotalBytes', () => 0);
+const serverConfig = useServerConfig();
+const appConfig = useAppConfig();
 
-function upload() {
+
+type ChunkPostResp = {
+  chunk_token: string
+}
+
+type ChunkPostReq = {
+  file_size: number
+  name: string
+}
+
+async function upload() {
   if (files.value.length === 0) {
     toast('No Files Selected', {
       description: 'Please select one or more files to proceed',
-    })
+    });
 
     return
   } else if (isUploading.value) {
     toast('Upload in Progress', {
       description: 'Please wait until the current upload is complete',
-    })
+    });
+
+    return
+  } else if (fileTotalBytes.value > serverConfig.value.file_size_limit) {
+    toast('Files Too Large', {
+      description: `These files exceeds the upload size limit of ${formatBytes(serverConfig.value.file_size_limit)}`,
+    });
 
     return
   }
-
   isUploading.value = true;
 
-  setTimeout(() => {
-    files.value.length = 0;
+  let file: Blob | File
+  let body: ChunkPostReq
+  if (files.value.length > 1) {
+    isZipping.value = true;
+    const zip = await filesZip(files.value as any);
+    isZipping.value = false;
+
+    if (zip.size > serverConfig.value.file_size_limit) {
+        toast('Zip file Too Large', {
+          description: `These files after zipping exceeds the upload size limit of ${formatBytes(serverConfig.value.file_size_limit)}`,
+        });
+
+        isUploading.value = true;
+        return
+    }
+
+    file = zip;
+    body = {
+      name: "zip.zip",
+      file_size: zip.size
+    }
+  } else {
+    file = files.value[0]
+    body = {
+      name: files.value[0].name,
+      file_size: file.size
+    }
+  }
+
+  const req = await useFetch(`${appConfig.serverUrl}/_alina/upload/chunked`, {
+    method: "POST",
+    body: body
+  })
+  if (req.status.value == "error") {
+    toast(req.error.value?.name ?? "Error", {
+      description: req.error.value?.message,
+    });
+
     isUploading.value = false;
-  }, 3000);
+    return
+  }
+  const { chunk_token } = req.data.value as ChunkPostResp
+
+  let responseText: string | undefined
+  const chunks = chunksFromFile(file, serverConfig.value.chunk_size)
+  for (let i = 0; i < chunks.length; i++) {
+    const data = new FormData();
+    data.append("chunk", chunks[i])
+    data.append("chunk_token", chunk_token)
+    data.append("chunk_index", `${i+1}`)
+
+    const req = new XMLHttpRequest();
+    req.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
+
+    for (let retry = 0, retries = 3; retry < retries; retry++) {
+      await new Promise<string>((resolve, reject) => {
+        req.onload = () => {
+          resolve(req.responseText)
+        }
+        req.onerror = () => {
+          reject();
+        }
+
+        req.send(data)
+      }).then((data) => {
+        responseText = data
+        retry = retries;
+      }).catch(() => {
+        retry += 1;
+      })
+    }
+
+    if (i+1 == chunks.length && !responseText) {
+      toast("Upload Failed", {
+        description: "Please check your internet connection and try again",
+      });
+
+      isUploading.value = false;
+      return
+    }
+  }
+
+  fileUploadLink.value = responseText as string;
+  fileUploadDialog.value = true;
+  files.value.length = 0;
+  isUploading.value = false;
+}
+
+async function fileLinkToClipBoard() {
+  if (!navigator.clipboard) {
+      toast("Clipboard Access Failed", {
+        description: "For security reasons clipboard is disabled",
+      });
+
+      fileUploadDialog.value = true;
+  }
+
+  navigator.clipboard.writeText(fileUploadLink.value)
+}
+
+function wipToast() {
+    toast('Under Construction', {
+      description: 'Nag sinan to get this implemented asap',
+    })
+}
+function pause() {
+    wipToast()
+}
+function cancel() {
+    wipToast()
 }
 
 function filesAdd(flist: FileList | null | undefined) {
@@ -73,6 +200,22 @@ function addInput(event: Event) {
 </script>
 
 <template>
+  <AlertDialog v-model:open="fileUploadDialog">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Files Uploaded Successfully</AlertDialogTitle>
+        <AlertDialogDescription>
+          Your files have been uploaded successfully and are ready to be shared or downloaded as
+          <a :href="fileUploadLink" target="_blank" class="text-black underline">{{fileUploadLink}}</a>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction :onclick="fileLinkToClipBoard">Copy Link</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
   <Card>
     <CardHeader>
       <CardTitle>Files</CardTitle>
@@ -81,8 +224,53 @@ function addInput(event: Event) {
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-2">
-      <input ref="uploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
-      <div v-if="isUploading" class="h-56 border-2 rounded-lg">
+      <input ref="fileUploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
+
+      <div v-if="isUploading" class="h-56 border-2 rounded-lg p-6 space-y-4 flex flex-col justify-between">
+        <div class="space-y-1.5 m-auto">
+          <div v-if="!isZipping" class="text-4xl font-bold">
+            {{ formatBytes(345345)}}ps
+          </div>
+          <div v-else class="text-4xl font-bold">
+            {{ formatBytes(fileTotalBytes)}}
+          </div>
+
+          <div v-if="isPaused" class="flex space-x-1 mx-auto w-min">
+            <Icon name="mdi:pause-circle-outline" class="my-auto" />
+            <p class="my-auto">Paused</p>
+          </div>
+          <div v-else-if="isZipping" class="flex space-x-1 mx-auto w-min">
+            <Icon name="svg-spinners:blocks-scale" class="my-auto" />
+            <p class="my-auto">Zipping</p>
+          </div>
+          <div v-else class="flex space-x-1 mx-auto w-min">
+            <Icon name="line-md:uploading-loop" class="my-auto" />
+            <p class="my-auto">Uploading</p>
+          </div>
+        </div>
+
+        <div v-if="!isZipping">
+          <div class="flex justify-between">
+            <div class="text-muted-foreground text-sm">
+              3 hours left
+            </div>
+            <div class="text-muted-foreground text-sm">
+              77%
+            </div>
+          </div>
+          <Progress :model-value="77"/>
+        </div>
+        <div v-else>
+          <div class="flex justify-between">
+            <div class="text-muted-foreground text-sm">
+              Fast as possible
+            </div>
+            <div class="text-muted-foreground text-sm">
+              In progress
+            </div>
+          </div>
+          <Progress :model-value="0" class="bg-gradient-to-l from-black/60 to-black animate-pulse"/>
+        </div>
       </div>
       <div v-else @click="uploadInput?.click()" @dragover="dragover" @dragleave="dragleave" @drop="drop" class="border-2 border-dashed h-56 rounded-lg sm:hover:bg-accent flex items-center cursor-pointer">
         <div class="mx-auto">
@@ -101,18 +289,24 @@ function addInput(event: Event) {
         <div>
           {{ files.length }} files selected
         </div>
-        <div>
+        <div v-if="fileTotalBytes <= serverConfig.file_size_limit">
+          {{ formatBytes(fileTotalBytes)}} in total
+        </div>
+        <div v-else class="text-red-700">
           {{ formatBytes(fileTotalBytes)}} in total
         </div>
       </div>
-      <div v-for="(file, index) in files"q class="border rounded-lg p-2 flex justify-between gap-2">
+      <div v-for="(file, index) in files" class="border rounded-lg p-2 flex justify-between gap-2">
         <div class="flex gap-2 truncate">
           <Icon name="uil:file"  class="text-4xl my-auto"/>
           <div class="truncate">
             <div class="font-bold my-auto truncate">
               {{ file.name }}
             </div>
-            <div class="text-muted-foreground text-sm">
+            <div v-if="file.size <= serverConfig.file_size_limit" class="text-muted-foreground text-sm">
+              {{ formatBytes(file.size) }}
+            </div>
+            <div v-else class="text-sm text-red-400">
               {{ formatBytes(file.size) }}
             </div>
           </div>
@@ -120,11 +314,22 @@ function addInput(event: Event) {
         <Button v-if="!isUploading" variant="ghost" class="my-auto" @click="filesRm(index)">
           <Icon name="mdi:close" />
         </Button>
-        <Icon v-else class="my-auto px-6" name="svg-spinners:dot-revolve" />
       </div>
     </CardContent>
-    <CardFooter class="flex justify-end">
-      <Button @click="upload">Upload</Button>
+    <CardFooter>
+      <div v-if="isZipping" class="flex justify-end w-full">
+        <Button @click="cancel" class="right-0">Cancel</Button>
+      </div>
+      <div v-else-if="isUploading" class="flex justify-between w-full space-x-2">
+        <div v-if="!isZipping">
+          <Button v-if="isPaused"  @click="upload">Resume</Button>
+          <Button v-else  @click="pause">Pause</Button>
+        </div>
+        <Button @click="cancel" class="right-0">Cancel</Button>
+      </div>
+      <div v-else class="flex justify-end w-full">
+        <Button @click="upload">Upload</Button>
+      </div>
     </CardFooter>
   </Card>
 </template>
