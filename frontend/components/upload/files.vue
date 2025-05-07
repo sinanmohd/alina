@@ -7,6 +7,7 @@ const isDragging = ref(false);
 const isUploading = useState('filesIsUploading', () => false);
 const isZipping = useState('filesIsZipping', () => false);
 const isPaused = useState('filesIsPaused', () => false);
+const bytesUploadedPerSecond = useState<number>('bytesUploadedPerSecond', () => 0);
 const fileUploadLink = useState<string>('fileUploadLink');
 const fileUploadDialog = defineModel<boolean>('fileUploadDialog')
 const uploadInput = useTemplateRef('fileUploadInput');
@@ -91,6 +92,13 @@ async function upload() {
   }
   const { chunk_token } = req.data.value as ChunkPostResp
 
+  let totalUploaded = 0;
+  let prevTotalUploaded = 0;
+  const speedInterval = setInterval(() => {
+    bytesUploadedPerSecond.value = totalUploaded - prevTotalUploaded;
+    prevTotalUploaded = totalUploaded;
+  }, 1000);
+
   let responseText: string | undefined
   const chunks = chunksFromFile(file, serverConfig.value.chunk_size)
   for (let i = uploadedChunkCount.value; i < chunks.length; i++) {
@@ -111,7 +119,7 @@ async function upload() {
         }
         req.upload.onprogress = (event) => {
           const eventUploaded = event.loaded > chunks[i].size ? chunks[i].size : event.loaded
-          const totalUploaded = uploadedChunkCount.value * serverConfig.value.chunk_size + eventUploaded
+          totalUploaded = uploadedChunkCount.value * serverConfig.value.chunk_size + eventUploaded
           fileUploadProgress.value = ((totalUploaded/file.size) * 100)
         }
 
@@ -131,10 +139,12 @@ async function upload() {
       });
 
       isUploading.value = false;
+      clearInterval(speedInterval);
       return
     }
   }
 
+  clearInterval(speedInterval)
   uploadedChunkCount.value = 0
   fileUploadLink.value = responseText as string;
   fileUploadDialog.value = true;
@@ -237,7 +247,7 @@ function addInput(event: Event) {
       <div v-if="isUploading" class="h-56 border-2 rounded-lg p-6 space-y-4 flex flex-col justify-between">
         <div class="space-y-1.5 m-auto">
           <div v-if="!isZipping" class="text-4xl font-bold">
-            {{ formatBytes(345345)}}ps
+            {{ formatBytes(bytesUploadedPerSecond)}}/s
           </div>
           <div v-else class="text-4xl font-bold">
             {{ formatBytes(fileTotalBytes)}}
