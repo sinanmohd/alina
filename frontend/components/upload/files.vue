@@ -10,6 +10,8 @@ const isPaused = useState('filesIsPaused', () => false);
 const fileUploadLink = useState<string>('fileUploadLink');
 const fileUploadDialog = defineModel<boolean>('fileUploadDialog')
 const uploadInput = useTemplateRef('fileUploadInput');
+const uploadedChunkCount = useState<number>('uploadedChunkCount', () => 0);
+const fileUploadProgress = useState<number>('fileUploadProgress', () => 0);
 const fileTotalBytes = useState<number>('fileTotalBytes', () => 0);
 const serverConfig = useServerConfig();
 const appConfig = useAppConfig();
@@ -65,7 +67,7 @@ async function upload() {
     file = zip;
     body = {
       name: "zip.zip",
-      file_size: zip.size
+      file_size: file.size
     }
   } else {
     file = files.value[0]
@@ -91,7 +93,7 @@ async function upload() {
 
   let responseText: string | undefined
   const chunks = chunksFromFile(file, serverConfig.value.chunk_size)
-  for (let i = 0; i < chunks.length; i++) {
+  for (let i = uploadedChunkCount.value; i < chunks.length; i++) {
     const data = new FormData();
     data.append("chunk", chunks[i])
     data.append("chunk_token", chunk_token)
@@ -99,7 +101,6 @@ async function upload() {
 
     const req = new XMLHttpRequest();
     req.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
-
     for (let retry = 0, retries = 3; retry < retries; retry++) {
       await new Promise<string>((resolve, reject) => {
         req.onload = () => {
@@ -108,9 +109,15 @@ async function upload() {
         req.onerror = () => {
           reject();
         }
+        req.upload.onprogress = (event) => {
+          const eventUploaded = event.loaded > chunks[i].size ? chunks[i].size : event.loaded
+          const totalUploaded = uploadedChunkCount.value * serverConfig.value.chunk_size + eventUploaded
+          fileUploadProgress.value = ((totalUploaded/file.size) * 100)
+        }
 
         req.send(data)
       }).then((data) => {
+        uploadedChunkCount.value += 1;
         responseText = data
         retry = retries;
       }).catch(() => {
@@ -128,6 +135,7 @@ async function upload() {
     }
   }
 
+  uploadedChunkCount.value = 0
   fileUploadLink.value = responseText as string;
   fileUploadDialog.value = true;
   files.value.length = 0;
@@ -254,11 +262,14 @@ function addInput(event: Event) {
             <div class="text-muted-foreground text-sm">
               3 hours left
             </div>
-            <div class="text-muted-foreground text-sm">
-              77%
+            <div class="flex">
+              <div class="text-muted-foreground text-sm font-mono my-auto">
+                {{fileUploadProgress.toFixed(2)}}
+              </div>
+              <div class="text-muted-foreground text-sm my-auto">%</div>
             </div>
           </div>
-          <Progress :model-value="77"/>
+          <Progress :model-value="fileUploadProgress" />
         </div>
         <div v-else>
           <div class="flex justify-between">
