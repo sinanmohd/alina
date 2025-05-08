@@ -20,17 +20,20 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	err := req.ParseMultipartForm(0)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		log.Println("Error parsing form:", err)
 		return
 	}
 
 	file, header, err := req.FormFile("file")
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		log.Println("Error fetching file:", err)
 		return
 	}
 	defer file.Close()
+
+	if int(header.Size) > server.cfg.FileSizeLimit {
+		http.Error(rw, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+		return
+	}
 
 	hasher, err := blake2b.New256(nil)
 	if err != nil {

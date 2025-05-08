@@ -167,3 +167,20 @@ func (q *Queries) FileFromHash(ctx context.Context, hash string) (FileFromHashRo
 	err := row.Scan(&i.ID, &i.MimeType)
 	return i, err
 }
+
+const fileFromId = `-- name: FileFromId :one
+SELECT mime_type, file_size FROM files
+WHERE id = $1
+`
+
+type FileFromIdRow struct {
+	MimeType string
+	FileSize int64
+}
+
+func (q *Queries) FileFromId(ctx context.Context, id int32) (FileFromIdRow, error) {
+	row := q.db.QueryRow(ctx, fileFromId, id)
+	var i FileFromIdRow
+	err := row.Scan(&i.MimeType, &i.FileSize)
+	return i, err
+}

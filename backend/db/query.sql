@@ -39,6 +39,10 @@ RETURNING files.id;
 SELECT id, mime_type FROM files
 WHERE hash = $1;
 
+-- name: FileFromId :one
+SELECT mime_type, file_size FROM files
+WHERE id = $1;
+
 -- name: FileDelete :exec
 DELETE FROM files
 WHERE id = $1;

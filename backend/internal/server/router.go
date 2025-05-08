@@ -45,6 +45,9 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	mux.Handle("GET /{fileId}", fs)
 	mux.Handle("GET /files/{fileId}", http.StripPrefix("/files/", fs))
 
+	mux.HandleFunc("GET /notes/{fileId}", notes)
+	mux.HandleFunc("GET /notes/styles.css", notesCSS)
+
 	publicConfigHandler := middleware(http.HandlerFunc(publicConfig))
 	mux.Handle("GET /_alina/config", publicConfigHandler)
 
