@@ -15,7 +15,9 @@ export const useUtils = () => {
     },
 
     formatDuration: (speed: number, length: number): string => {
-      if (speed <= 0 || length <= 0) return 'Fast as possible';
+      if (speed <= 0 || length <= 0) {
+        return 'Fast as possible';
+      }
 
       const duration = length/speed;
       let durationFormatted: number

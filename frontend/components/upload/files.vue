@@ -60,6 +60,7 @@ async function upload() {
   if (files.value.length > 1) {
     isZipping.value = true;
     const zip = await filesZip(files.value as any);
+    if (!isZipping.value) return;
     isZipping.value = false;
 
     if (zip.size > serverConfig.value.file_size_limit) {
@@ -119,6 +120,7 @@ async function upload() {
 
     fileXhrReq.value = new XMLHttpRequest();
     fileXhrReq.value.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
+    let isError = false;
     for (let retry = 0, retries = 3; retry < retries; retry++) {
       await new Promise<string>((resolve, reject) => {
         fileXhrReq.value.onload = () => {
@@ -135,10 +137,12 @@ async function upload() {
 
         fileXhrReq.value.send(data)
       }).then((data) => {
+        isError = false;
         uploadedChunkCount.value += 1;
         responseText = data
         retry = retries;
       }).catch(() => {
+        isError = true;
         if (isPaused.value) {
           retry = retries;
         } else {
@@ -147,16 +151,12 @@ async function upload() {
       })
     }
 
-    if (i+1 == chunks.length && !responseText) {
+    if (isError || (i+1 == chunks.length && !responseText)) {
       toast("Upload Failed", {
         description: "Please check your internet connection and try again",
       });
 
-      if (isPaused.value) {
-        clearInterval(fileSpeedInterval.value);
-      }
-
-      filesIsUploading.value = false;
+      pause();
       return
     }
   }
@@ -178,6 +178,7 @@ function cancel() {
   fileXhrReq.value.abort();
   clearInterval(fileSpeedInterval.value)
   filesIsUploading.value = false;
+  isZipping.value = false;
   uploadedChunkCount.value = 0;
 }
 
