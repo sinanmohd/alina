@@ -18,6 +18,7 @@ Your awesome frenly neighbourhood file sharing website.
 - Secure chunked uploads with JWT without requiring a login.
 - Parallel accelerated chunked uploads.
 - Merges duplicate files to save space.
+- Markdown rendering for text notes.
 - Sleek, user-friendly interface.
 - and much more...
 

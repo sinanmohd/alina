@@ -26,7 +26,7 @@ async function dialogCancel() {
   <AlertDialog v-bind:open="fileUploadDialog">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Files Uploaded Successfully</AlertDialogTitle>
+        <AlertDialogTitle>Data Uploaded Successfully</AlertDialogTitle>
         <AlertDialogDescription>
           Your data have been uploaded successfully and is ready to be shared or downloaded as
           <a :href="uploadLink" target="_blank" class="text-black underline">{{uploadLink}}</a>
@@ -39,15 +39,15 @@ async function dialogCancel() {
     </AlertDialogContent>
   </AlertDialog>
 
-  <Tabs default-value="text" class="w-full sm:w-3xl mx-auto p-4">
+  <Tabs default-value="files" class="w-full sm:w-3xl mx-auto p-4">
 
     <TabsList class="grid w-full grid-cols-2">
       <TabsTrigger value="files">
-        <Icon name="mdi:files"/>
+        <Icon name="lucide:files"/>
         Files
       </TabsTrigger>
       <TabsTrigger value="text">
-        <Icon name="mdi:text"/>
+        <Icon name="material-symbols:markdown-outline"/>
         Text
       </TabsTrigger>
     </TabsList>

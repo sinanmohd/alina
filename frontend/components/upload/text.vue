@@ -6,6 +6,7 @@ const { formatBytes } = useUtils();
 const textContent = useState<string>('textContent', () => "")
 const uploadLink = useState<string>('uploadLink');
 const fileUploadDialog = useState<boolean>('fileUploadDialog');
+const textMarkdownSwitch = useState<boolean>('textMarkdownSwitch', () => true);
 const textIsUploading = useState('textIsUploading', () => false);
 const filesIsUploading = useState('filesIsUploading', () => false);
 const serverConfig = useServerConfig();
@@ -49,7 +50,14 @@ async function upload() {
     return
   }
 
-  uploadLink.value = req.data.value as string;
+  if (textMarkdownSwitch.value) {
+    const  data =  req.data.value as string
+    const fileId = data.split('/').slice(-1)[0].replace('.txt', '')
+    uploadLink.value = `${appConfig.serverUrl}/notes/${fileId}`
+  } else {
+    uploadLink.value = req.data.value as string;
+  }
+
   fileUploadDialog.value = true;
 }
 </script>
@@ -66,7 +74,12 @@ async function upload() {
     <CardContent class="space-y-2">
       <Textarea class="h-56" v-model="textContent"/>
     </CardContent>
-    <CardFooter class="flex justify-end">
+    <CardFooter class="flex justify-between">
+      <div class="flex items-center space-x-2">
+        <Switch v-model:model-value="textMarkdownSwitch"/>
+        <Label>Markdown</Label>
+      </div>
+
       <Button v-if="!textIsUploading" :onclick="upload">Save</Button>
       <Button v-else :onclick="upload">
         <Icon name="svg-spinners:gooey-balls-1"/>
