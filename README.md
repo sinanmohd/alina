@@ -3,10 +3,8 @@
 # alina
 
 [![Badge Matrix]](https://matrix.to/#/#chat:sinanmohd.com)
-![Badge License]
 ![Badge Pull Requests]
 ![Badge Issues]
-![Badge Hi Mom]
 
 Your awesome frenly neighbourhood file sharing website. 
 
@@ -52,5 +50,3 @@ Your awesome frenly neighbourhood file sharing website.
 [Badge Matrix]: https://img.shields.io/matrix/chat:sinanmohd.com.svg?label=%23chat%3Asinanmohd.com&logo=matrix&server_fqdn=sinanmohd.com
 [Badge Issues]: https://img.shields.io/github/issues/sinanmohd/alina
 [Badge Pull Requests]: https://img.shields.io/github/issues-pr/sinanmohd/alina
-[Badge License]: https://img.shields.io/github/license/sinanmohd/alina
-[Badge Hi Mom]: https://img.shields.io/badge/Hi-mom!-ff69b4
