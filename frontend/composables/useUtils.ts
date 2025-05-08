@@ -15,7 +15,7 @@ export const useUtils = () => {
     },
 
     formatDuration: (speed: number, length: number): string => {
-      if (speed <= 0 || length <= 0) return 'Infinity';
+      if (speed <= 0 || length <= 0) return 'Fast as possible';
 
       const duration = length/speed;
       let durationFormatted: number
@@ -35,7 +35,7 @@ export const useUtils = () => {
         durationFormattedUnit =  "days";
       }
 
-      return durationFormatted.toFixed(0) + " " + durationFormattedUnit + (duration < 2 ? "" : "s");
+      return durationFormatted.toFixed(0) + " " + durationFormattedUnit + (duration < 2 ? "" : "s") + " left";
     },
 
     filesZip: async (files: FileList): Promise<Blob> => {

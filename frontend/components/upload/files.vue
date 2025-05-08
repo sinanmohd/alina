@@ -17,6 +17,9 @@ const uploadedChunkCount = useState<number>('uploadedChunkCount', () => 0);
 const fileUploadProgress = useState<number>('fileUploadProgress', () => 0);
 const fileTotalBytes = useState<number>('fileTotalBytes', () => 0);
 const serverConfig = useServerConfig();
+const fileXhrReq = useState<XMLHttpRequest>('fileXhrReq');
+const fileSpeedInterval = useState<number>('fileSpeedInterval');
+const fileChunkToken = useState<string>('fileChunkToken');
 const appConfig = useAppConfig();
 
 
@@ -36,7 +39,7 @@ async function upload() {
     });
 
     return
-  } else if (filesIsUploading.value || textIsUploading.value) {
+  } else if ((filesIsUploading.value && !isPaused.value) || textIsUploading.value) {
     toast('Upload in Progress', {
       description: 'Please wait until the current upload is complete',
     });
@@ -50,6 +53,7 @@ async function upload() {
     return
   }
   filesIsUploading.value = true;
+  isPaused.value = false;
 
   let file: Blob | File
   let body: ChunkPostReq
@@ -80,59 +84,66 @@ async function upload() {
     }
   }
 
-  const req = await useFetch(`${appConfig.serverUrl}/_alina/upload/chunked`, {
-    method: "POST",
-    body: body
-  })
-  if (req.status.value == "error") {
-    toast(req.error.value?.name ?? "Error", {
-      description: req.error.value?.message,
-    });
+  if (uploadedChunkCount.value == 0) {
+    const req = await useFetch(`${appConfig.serverUrl}/_alina/upload/chunked`, {
+      method: "POST",
+      body: body
+    })
+    if (req.status.value == "error") {
+      toast(req.error.value?.name ?? "Error", {
+        description: req.error.value?.message,
+      });
 
-    filesIsUploading.value = false;
-    return
+      filesIsUploading.value = false;
+      return
+    }
+    const { chunk_token } = req.data.value as ChunkPostResp
+    fileChunkToken.value = chunk_token
   }
-  const { chunk_token } = req.data.value as ChunkPostResp
 
   let totalUploaded = 0;
   let prevTotalUploaded = 0;
-  const speedInterval = setInterval(() => {
+  fileSpeedInterval.value = setInterval(() => {
     bytesUploadedPerSecond.value = totalUploaded - prevTotalUploaded;
     prevTotalUploaded = totalUploaded;
     fileUploadETA.value = formatDuration(bytesUploadedPerSecond.value, body.file_size - totalUploaded);
-  }, 1000);
+  }, 1000) as any;
 
   let responseText: string | undefined
   const chunks = chunksFromFile(file, serverConfig.value.chunk_size)
   for (let i = uploadedChunkCount.value; i < chunks.length; i++) {
     const data = new FormData();
     data.append("chunk", chunks[i])
-    data.append("chunk_token", chunk_token)
+    data.append("chunk_token", fileChunkToken.value)
     data.append("chunk_index", `${i+1}`)
 
-    const req = new XMLHttpRequest();
-    req.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
+    fileXhrReq.value = new XMLHttpRequest();
+    fileXhrReq.value.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
     for (let retry = 0, retries = 3; retry < retries; retry++) {
       await new Promise<string>((resolve, reject) => {
-        req.onload = () => {
-          resolve(req.responseText)
+        fileXhrReq.value.onload = () => {
+          resolve(fileXhrReq.value.responseText)
         }
-        req.onerror = () => {
+        fileXhrReq.value.onerror = () => {
           reject();
         }
-        req.upload.onprogress = (event) => {
+        fileXhrReq.value.upload.onprogress = (event) => {
           const eventUploaded = event.loaded > chunks[i].size ? chunks[i].size : event.loaded
           totalUploaded = uploadedChunkCount.value * serverConfig.value.chunk_size + eventUploaded
           fileUploadProgress.value = ((totalUploaded/file.size) * 100)
         }
 
-        req.send(data)
+        fileXhrReq.value.send(data)
       }).then((data) => {
         uploadedChunkCount.value += 1;
         responseText = data
         retry = retries;
       }).catch(() => {
-        retry += 1;
+        if (isPaused.value) {
+          retry = retries;
+        } else {
+          retry += 1;
+        }
       })
     }
 
@@ -141,13 +152,16 @@ async function upload() {
         description: "Please check your internet connection and try again",
       });
 
+      if (isPaused.value) {
+        clearInterval(fileSpeedInterval.value);
+      }
+
       filesIsUploading.value = false;
-      clearInterval(speedInterval);
       return
     }
   }
 
-  clearInterval(speedInterval)
+  clearInterval(fileSpeedInterval.value)
   uploadedChunkCount.value = 0
   uploadLink.value = responseText as string;
   fileUploadDialog.value = true;
@@ -155,16 +169,16 @@ async function upload() {
   filesIsUploading.value = false;
 }
 
-function wipToast() {
-    toast('Under Construction', {
-      description: 'Nag sinan to get this implemented asap',
-    })
-}
 function pause() {
-    wipToast()
+  isPaused.value = true;
+  fileXhrReq.value.abort();
+  clearInterval(fileSpeedInterval.value);
 }
 function cancel() {
-    wipToast()
+  fileXhrReq.value.abort();
+  clearInterval(fileSpeedInterval.value)
+  filesIsUploading.value = false;
+  uploadedChunkCount.value = 0;
 }
 
 function filesAdd(flist: FileList | null | undefined) {
@@ -245,7 +259,7 @@ function addInput(event: Event) {
         <div v-if="!isZipping">
           <div class="flex justify-between">
             <div class="text-muted-foreground text-sm">
-              {{fileUploadETA}} left
+              {{fileUploadETA}}
             </div>
             <div class="flex">
               <div class="text-muted-foreground text-sm font-mono my-auto">
