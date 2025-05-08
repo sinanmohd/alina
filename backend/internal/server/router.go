@@ -9,6 +9,7 @@ import (
 
 	"sinanmohd.com/alina/db"
 	"sinanmohd.com/alina/internal/config"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var server struct {
@@ -40,6 +41,8 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 
 		mux.Handle("OPTIONS /", corsOptionsHandler)
 	}
+
+	mux.Handle("GET /metrics", promhttp.Handler())
 
 	fs := middleware(http.FileServer(http.Dir(server.storagePath)))
 	mux.Handle("GET /{fileId}", fs)

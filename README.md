@@ -14,10 +14,11 @@ Your awesome frenly neighbourhood file sharing website.
 # features
 
 - Pause, resume, and retry uploads effortlessly.
+- Prometheus/Grafana metrics.
 - Upload files directly from the terminal.
 - Secure chunked uploads with JWT without requiring a login.
 - Parallel accelerated chunked uploads.
-- Merges duplicate files to save space.
+- Auto Merge duplicate files to save space.
 - Markdown rendering for text notes.
 - Sleek, user-friendly interface.
 - and much more...
