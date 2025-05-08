@@ -98,7 +98,7 @@ async function upload() {
   const speedInterval = setInterval(() => {
     bytesUploadedPerSecond.value = totalUploaded - prevTotalUploaded;
     prevTotalUploaded = totalUploaded;
-    fileUploadETA.value = formatDuration(bytesUploadedPerSecond.value, body.file_size);
+    fileUploadETA.value = formatDuration(bytesUploadedPerSecond.value, body.file_size - totalUploaded);
   }, 1000);
 
   let responseText: string | undefined
