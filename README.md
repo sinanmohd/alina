@@ -48,7 +48,7 @@ cd -
 # frontend
 nix develop
 cd ./frontend
-npx nuxt dev --host
+NUXT_PUBLIC_SERVER_URL=http://localhost:8008 npx nuxt dev --host
 
 # backend
 nix develop

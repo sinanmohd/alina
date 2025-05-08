@@ -32,6 +32,10 @@ type ChunkPostReq = {
   name: string
 }
 
+type ChunkCancelReq = {
+  chunk_token: string
+}
+
 async function upload() {
   if (files.value.length === 0) {
     toast('No Files Selected', {
@@ -174,12 +178,26 @@ function pause() {
   fileXhrReq.value.abort();
   clearInterval(fileSpeedInterval.value);
 }
-function cancel() {
+async function cancel() {
   fileXhrReq.value.abort();
   clearInterval(fileSpeedInterval.value)
   filesIsUploading.value = false;
   isZipping.value = false;
   uploadedChunkCount.value = 0;
+
+  const body: ChunkCancelReq = {
+    chunk_token: fileChunkToken.value
+  }
+
+  const req = await useFetch(`${serverUrl.value}/_alina/upload/chunked`, {
+    method: "DELETE",
+    body: body
+  })
+  if (req.status.value == "error") {
+    toast("Cancel Failed", {
+      description: req.error.value?.message,
+    });
+  }
 }
 
 function filesAdd(flist: FileList | null | undefined) {
