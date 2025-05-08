@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const appConfig = useAppConfig();
+const serverUrl = useState('serverUrl', () => window.location.origin)
 const { copyToClipboard } = useUtils();
-const terminalExamble = `curl -F "file=@/path/to/your/file.jpg" ${appConfig.serverUrl}`;
+const terminalExamble = `curl -F "file=@/path/to/your/file.jpg" ${serverUrl.value}`;
 
 function copyExamble(){
   copyToClipboard(terminalExamble);

@@ -31,6 +31,12 @@ export default defineNuxtConfig({
     ],
   },
 
+  runtimeConfig: {
+    public: {
+      serverUrl: ''
+    }
+  },
+
   app: {
     baseURL: '/home/',
     head: {

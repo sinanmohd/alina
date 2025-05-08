@@ -20,7 +20,7 @@ const serverConfig = useServerConfig();
 const fileXhrReq = useState<XMLHttpRequest>('fileXhrReq');
 const fileSpeedInterval = useState<number>('fileSpeedInterval');
 const fileChunkToken = useState<string>('fileChunkToken');
-const appConfig = useAppConfig();
+const serverUrl = useState('serverUrl', () => window.location.origin)
 
 
 type ChunkPostResp = {
@@ -86,7 +86,7 @@ async function upload() {
   }
 
   if (uploadedChunkCount.value == 0) {
-    const req = await useFetch(`${appConfig.serverUrl}/_alina/upload/chunked`, {
+    const req = await useFetch(`${serverUrl.value}/_alina/upload/chunked`, {
       method: "POST",
       body: body
     })
@@ -119,7 +119,7 @@ async function upload() {
     data.append("chunk_index", `${i+1}`)
 
     fileXhrReq.value = new XMLHttpRequest();
-    fileXhrReq.value.open('PATCH', `${appConfig.serverUrl}/_alina/upload/chunked`)
+    fileXhrReq.value.open('PATCH', `${serverUrl.value}/_alina/upload/chunked`)
     let isError = false;
     for (let retry = 0, retries = 3; retry < retries; retry++) {
       await new Promise<string>((resolve, reject) => {

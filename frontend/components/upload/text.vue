@@ -10,7 +10,7 @@ const textMarkdownSwitch = useState<boolean>('textMarkdownSwitch', () => true);
 const textIsUploading = useState('textIsUploading', () => false);
 const filesIsUploading = useState('filesIsUploading', () => false);
 const serverConfig = useServerConfig();
-const appConfig = useAppConfig();
+const serverUrl = useState('serverUrl', () => window.location.origin)
 
 async function upload() {
   const textContentTrimmed = textContent.value.trimEnd();
@@ -37,7 +37,7 @@ async function upload() {
   const body = new FormData();
   body.append("file", new Blob([textContentTrimmed], { type: 'text/plain'}))
 
-  const req = await useFetch(`${appConfig.serverUrl}/_alina/upload/simple`, {
+  const req = await useFetch(`${serverUrl.value}/_alina/upload/simple`, {
     method: "POST",
     body: body
   })
@@ -53,7 +53,7 @@ async function upload() {
   if (textMarkdownSwitch.value) {
     const  data =  req.data.value as string
     const fileId = data.split('/').slice(-1)[0].replace('.txt', '')
-    uploadLink.value = `${appConfig.serverUrl}/notes/${fileId}`
+    uploadLink.value = `${serverUrl.value}/notes/${fileId}`
   } else {
     uploadLink.value = req.data.value as string;
   }
