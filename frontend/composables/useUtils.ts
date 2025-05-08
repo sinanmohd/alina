@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { toast } from 'vue-sonner';
 
 export const useUtils = () => {
   return {
@@ -62,6 +63,18 @@ export const useUtils = () => {
       }
 
       return chunks
-    }
+    },
+
+    copyToClipboard: async (data: string) => {
+      if (!navigator.clipboard) {
+          toast("Clipboard Access Failed", {
+            description: "For security reasons clipboard is disabled",
+          });
+
+          return;
+      }
+
+      await navigator.clipboard.writeText(data);
+    },
   }
 }

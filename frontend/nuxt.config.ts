@@ -30,4 +30,13 @@ export default defineNuxtConfig({
       },
     ],
   },
+
+  app: {
+    baseURL: '/home/',
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  }
 })

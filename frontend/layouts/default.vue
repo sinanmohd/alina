@@ -1,7 +1,7 @@
 <template>
   <main class="flex flex-col min-h-screen">
     <header>
-      <nav class="sm:w-7xl w-full px-3 mx-auto py-3 flex justify-between">
+      <nav class="max-w-7xl px-3 mx-auto py-3 flex justify-between">
         <section class="flex gap-1 text-3xl">
           <Icon name="my-icon:logo" />
           <p class="font-bold text-rose-700">alina</p>
@@ -26,7 +26,7 @@
     <Separator />
 
     <footer class="sm:w-7xl w-full px-3 mx-auto py-2 flex justify-between">
-      <p class="text-sm text-(--ui-text-muted)">
+      <p class="text-sm text-(--ui-text-muted) my-auto">
         Copyright © {{ new Date().getFullYear() }} Sinan -
         <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" class="hover:underline"> AGPL3 License </a>
       </p>

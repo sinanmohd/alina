@@ -39,9 +39,9 @@ async function dialogCancel() {
     </AlertDialogContent>
   </AlertDialog>
 
-  <Tabs default-value="files" class="w-full sm:w-3xl mx-auto p-4">
+  <Tabs default-value="files" class="max-w-3xl mx-auto p-4">
 
-    <TabsList class="grid w-full grid-cols-2">
+    <TabsList class="grid w-full grid-cols-3">
       <TabsTrigger value="files">
         <Icon name="lucide:files"/>
         Files
@@ -49,6 +49,10 @@ async function dialogCancel() {
       <TabsTrigger value="text">
         <Icon name="material-symbols:markdown-outline"/>
         Text
+      </TabsTrigger>
+      <TabsTrigger value="terminal">
+        <Icon name="mdi:terminal"/>
+        Terminal
       </TabsTrigger>
     </TabsList>
 
@@ -58,6 +62,10 @@ async function dialogCancel() {
 
     <TabsContent value="text">
       <UploadText />
+    </TabsContent>
+
+    <TabsContent value="terminal">
+      <UploadTerminal />
     </TabsContent>
   </Tabs>
 </template>
