@@ -1,5 +1,45 @@
+<script setup lang="ts">
+import { toast } from 'vue-sonner';
+
+const fileUploadDialog = useState<boolean>('fileUploadDialog', () => false)
+const uploadLink = useState<string>('uploadLink');
+
+async function dialogLinkToClipBoard() {
+  if (!navigator.clipboard) {
+      toast("Clipboard Access Failed", {
+        description: "For security reasons clipboard is disabled",
+      });
+
+      return;
+  }
+
+  fileUploadDialog.value = false;
+  navigator.clipboard.writeText(uploadLink.value)
+}
+
+async function dialogCancel() {
+  fileUploadDialog.value = false;
+}
+</script>
+
 <template>
-  <Tabs default-value="files" class="w-full sm:w-3xl mx-auto p-4">
+  <AlertDialog v-bind:open="fileUploadDialog">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Files Uploaded Successfully</AlertDialogTitle>
+        <AlertDialogDescription>
+          Your data have been uploaded successfully and is ready to be shared or downloaded as
+          <a :href="uploadLink" target="_blank" class="text-black underline">{{uploadLink}}</a>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel :onclick="dialogCancel">Cancel</AlertDialogCancel>
+        <AlertDialogAction :onclick="dialogLinkToClipBoard">Copy Link</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <Tabs default-value="text" class="w-full sm:w-3xl mx-auto p-4">
 
     <TabsList class="grid w-full grid-cols-2">
       <TabsTrigger value="files">

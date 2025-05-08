@@ -4,13 +4,14 @@ import { toast } from 'vue-sonner';
 const { formatBytes, filesZip, chunksFromBlob: chunksFromFile, formatDuration } = useUtils();
 const files = useState<File[]>('files', () => []);
 const isDragging = ref(false);
-const isUploading = useState('filesIsUploading', () => false);
+const filesIsUploading = useState('filesIsUploading', () => false);
+const textIsUploading = useState('textIsUploading', () => false);
 const isZipping = useState('filesIsZipping', () => false);
 const isPaused = useState('filesIsPaused', () => false);
 const fileUploadETA = useState<string>('fileUploadETA', () => "Infinity");
 const bytesUploadedPerSecond = useState<number>('bytesUploadedPerSecond', () => 0);
-const fileUploadLink = useState<string>('fileUploadLink');
-const fileUploadDialog = defineModel<boolean>('fileUploadDialog')
+const uploadLink = useState<string>('uploadLink');
+const fileUploadDialog = useState<boolean>('fileUploadDialog');
 const uploadInput = useTemplateRef('fileUploadInput');
 const uploadedChunkCount = useState<number>('uploadedChunkCount', () => 0);
 const fileUploadProgress = useState<number>('fileUploadProgress', () => 0);
@@ -35,7 +36,7 @@ async function upload() {
     });
 
     return
-  } else if (isUploading.value) {
+  } else if (filesIsUploading.value || textIsUploading.value) {
     toast('Upload in Progress', {
       description: 'Please wait until the current upload is complete',
     });
@@ -48,7 +49,7 @@ async function upload() {
 
     return
   }
-  isUploading.value = true;
+  filesIsUploading.value = true;
 
   let file: Blob | File
   let body: ChunkPostReq
@@ -62,7 +63,7 @@ async function upload() {
           description: `These files after zipping exceeds the upload size limit of ${formatBytes(serverConfig.value.file_size_limit)}`,
         });
 
-        isUploading.value = true;
+        filesIsUploading.value = true;
         return
     }
 
@@ -88,7 +89,7 @@ async function upload() {
       description: req.error.value?.message,
     });
 
-    isUploading.value = false;
+    filesIsUploading.value = false;
     return
   }
   const { chunk_token } = req.data.value as ChunkPostResp
@@ -140,7 +141,7 @@ async function upload() {
         description: "Please check your internet connection and try again",
       });
 
-      isUploading.value = false;
+      filesIsUploading.value = false;
       clearInterval(speedInterval);
       return
     }
@@ -148,22 +149,10 @@ async function upload() {
 
   clearInterval(speedInterval)
   uploadedChunkCount.value = 0
-  fileUploadLink.value = responseText as string;
+  uploadLink.value = responseText as string;
   fileUploadDialog.value = true;
   files.value.length = 0;
-  isUploading.value = false;
-}
-
-async function fileLinkToClipBoard() {
-  if (!navigator.clipboard) {
-      toast("Clipboard Access Failed", {
-        description: "For security reasons clipboard is disabled",
-      });
-
-      fileUploadDialog.value = true;
-  }
-
-  navigator.clipboard.writeText(fileUploadLink.value)
+  filesIsUploading.value = false;
 }
 
 function wipToast() {
@@ -220,22 +209,6 @@ function addInput(event: Event) {
 </script>
 
 <template>
-  <AlertDialog v-model:open="fileUploadDialog">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Files Uploaded Successfully</AlertDialogTitle>
-        <AlertDialogDescription>
-          Your files have been uploaded successfully and are ready to be shared or downloaded as
-          <a :href="fileUploadLink" target="_blank" class="text-black underline">{{fileUploadLink}}</a>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction :onclick="fileLinkToClipBoard">Copy Link</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-
   <Card>
     <CardHeader>
       <CardTitle>Files</CardTitle>
@@ -246,7 +219,7 @@ function addInput(event: Event) {
     <CardContent class="space-y-2">
       <input ref="fileUploadInput" type="file" multiple="true" class="hidden" @change="addInput" />
 
-      <div v-if="isUploading" class="h-56 border-2 rounded-lg p-6 space-y-4 flex flex-col justify-between">
+      <div v-if="filesIsUploading" class="h-56 border-2 rounded-lg p-6 space-y-4 flex flex-col justify-between">
         <div class="space-y-1.5 m-auto">
           <div v-if="!isZipping" class="text-4xl font-bold">
             {{ formatBytes(bytesUploadedPerSecond)}}/s
@@ -334,7 +307,7 @@ function addInput(event: Event) {
             </div>
           </div>
         </div>
-        <Button v-if="!isUploading" variant="ghost" class="my-auto" @click="filesRm(index)">
+        <Button v-if="!filesIsUploading" variant="ghost" class="my-auto" @click="filesRm(index)">
           <Icon name="mdi:close" />
         </Button>
       </div>
@@ -343,7 +316,7 @@ function addInput(event: Event) {
       <div v-if="isZipping" class="flex justify-end w-full">
         <Button @click="cancel" class="right-0">Cancel</Button>
       </div>
-      <div v-else-if="isUploading" class="flex justify-between w-full space-x-2">
+      <div v-else-if="filesIsUploading" class="flex justify-between w-full space-x-2">
         <div v-if="!isZipping">
           <Button v-if="isPaused"  @click="upload">Resume</Button>
           <Button v-else  @click="pause">Pause</Button>
