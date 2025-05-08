@@ -14,6 +14,30 @@ export const useUtils = () => {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     },
 
+    formatDuration: (speed: number, length: number): string => {
+      if (speed <= 0 || length <= 0) return 'Infinity';
+
+      const duration = length/speed;
+      let durationFormatted: number
+      let durationFormattedUnit: string
+
+      if (duration < 60) {
+        durationFormatted = duration
+        durationFormattedUnit =  "second";
+      } else if(duration < 60 * 60) {
+        durationFormatted = (duration / 60)
+        durationFormattedUnit =  "minute";
+      } else if (duration < 60 * 60 * 24) {
+        durationFormatted = (duration / (60 * 60))
+        durationFormattedUnit =  "hour";
+      } else {
+        durationFormatted = (duration / (60 * 60 * 24))
+        durationFormattedUnit =  "days";
+      }
+
+      return durationFormatted.toFixed(0) + " " + durationFormattedUnit + (duration < 2 ? "" : "s");
+    },
+
     filesZip: async (files: FileList): Promise<Blob> => {
       const zip = new JSZip();
 

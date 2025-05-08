@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
-const { formatBytes, filesZip, chunksFromBlob: chunksFromFile } = useUtils();
+const { formatBytes, filesZip, chunksFromBlob: chunksFromFile, formatDuration } = useUtils();
 const files = useState<File[]>('files', () => []);
 const isDragging = ref(false);
 const isUploading = useState('filesIsUploading', () => false);
 const isZipping = useState('filesIsZipping', () => false);
 const isPaused = useState('filesIsPaused', () => false);
+const fileUploadETA = useState<string>('fileUploadETA', () => "Infinity");
 const bytesUploadedPerSecond = useState<number>('bytesUploadedPerSecond', () => 0);
 const fileUploadLink = useState<string>('fileUploadLink');
 const fileUploadDialog = defineModel<boolean>('fileUploadDialog')
@@ -97,6 +98,7 @@ async function upload() {
   const speedInterval = setInterval(() => {
     bytesUploadedPerSecond.value = totalUploaded - prevTotalUploaded;
     prevTotalUploaded = totalUploaded;
+    fileUploadETA.value = formatDuration(bytesUploadedPerSecond.value, body.file_size);
   }, 1000);
 
   let responseText: string | undefined
@@ -270,7 +272,7 @@ function addInput(event: Event) {
         <div v-if="!isZipping">
           <div class="flex justify-between">
             <div class="text-muted-foreground text-sm">
-              3 hours left
+              {{fileUploadETA}} left
             </div>
             <div class="flex">
               <div class="text-muted-foreground text-sm font-mono my-auto">
