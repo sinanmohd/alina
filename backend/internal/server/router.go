@@ -1,15 +1,17 @@
 package server
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"path"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"sinanmohd.com/alina/db"
 	"sinanmohd.com/alina/internal/config"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var server struct {
@@ -19,6 +21,9 @@ var server struct {
 	storagePath string
 	chunkedPath string
 }
+
+//go:embed  all:frontend
+var frontendFs embed.FS
 
 func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	mux := http.NewServeMux()
@@ -43,6 +48,16 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	}
 
 	mux.Handle("GET /metrics", promhttp.Handler())
+
+	mux.HandleFunc("GET /", func(rw http.ResponseWriter, req *http.Request) {
+		http.Redirect(rw, req, "/home/", http.StatusMovedPermanently)
+	})
+	frontend, err := fs.Sub(fs.FS(frontendFs), "frontend")
+	if err != nil {
+		log.Println("Error traversing fs: ", err)
+		return err
+	}
+	mux.Handle("GET /home/", http.StripPrefix("/home/", http.FileServer(http.FS(frontend))))
 
 	fs := middleware(http.FileServer(http.Dir(server.storagePath)))
 	mux.Handle("GET /{fileId}", fs)

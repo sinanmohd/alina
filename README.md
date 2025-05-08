@@ -26,6 +26,36 @@ Your awesome frenly neighbourhood file sharing website.
 
 ![Preview A]
 
+# build
+```
+nix develop
+
+cd ./frontend
+npm i
+npx nuxi generate
+cd -
+
+rm -rf ./backend/internal/server/frontend
+cp -rv ./frontend/.output/public ./backend/internal/server/frontend
+
+cd ./backend
+go build -o ../alina ./cmd/alina/main.go
+cd -
+```
+
+# dev setup
+```
+# frontend
+nix develop
+cd ./frontend
+npx nuxt dev --host
+
+# backend
+nix develop
+cd ./backend
+air
+```
+
 # special thanks
 
 **[Tailwind, Nuxt, Shadcn]** - *For helping with frontend*
