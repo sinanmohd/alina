@@ -32,7 +32,7 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	server.storagePath = path.Join(cfg.Data, "storage")
 	server.chunkedPath = path.Join(cfg.Data, "chunked")
 
-	err := os.MkdirAll(server.storagePath, 0700)
+	err := os.MkdirAll(server.storagePath, 0755)
 	if err != nil {
 		log.Println("Error creating directory: ", err)
 		return err

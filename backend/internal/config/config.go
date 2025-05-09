@@ -29,11 +29,16 @@ type Config struct {
 
 func New() (*Config, error) {
 	defaultSecretKey := "change-me-for-dev-only"
+	defaultDataDir := "alina_data"
+	if value, ok := os.LookupEnv("STATE_DIRECTORY"); ok {
+		defaultDataDir = value
+	}
+
 	config := Config{
 		Server: ServerConfig{
 			Host:          "[::]",
 			Port:          8008,
-			Data:          "alina_data",
+			Data:          defaultDataDir,
 			PublicUrl:     "http://localhost:8008",
 			FileSizeLimit: 1024 * 1024 * 256, // 256MB
 			ChunkSize:     1024 * 1024, // 1MB

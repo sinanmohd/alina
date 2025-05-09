@@ -95,7 +95,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	fileName := fmt.Sprintf("%v%v", fileId56, mtype.Extension())
 	filePath := path.Join(server.storagePath, fileName)
 
-	dst, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0600)
+	dst, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

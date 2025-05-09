@@ -58,16 +58,26 @@ in
     environment.systemPackages = [ cfg.package ];
     services.alina.settings.server.port = lib.mkDefault cfg.port;
 
+    # This service stores a potentially large amount of data.
+    # Running it as a dynamic user would force chown to be run everytime the
+    # service is restarted on a potentially large number of files.
+    # That would cause unnecessary and unwanted delays.
+    users = {
+      groups.alina = { };
+      users.alina = {
+        isSystemUser = true;
+        group = "alina";
+      };
+    };
+
     systemd.services.alina = {
       description = "Your frenly neighbourhood file sharing website.";
       wantedBy = [ "multi-user.target" ];
       after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
       environment = defaultEnvs // cfg.environment;
 
       serviceConfig = {
         Type = "simple";
-        DynamicUser = true;
         StateDirectory = "alina";
         Restart = "on-failure";
         EnvironmentFile = lib.mkIf (cfg.environmentFile != null) cfg.environmentFile;

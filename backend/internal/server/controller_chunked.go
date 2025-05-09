@@ -144,7 +144,7 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	chunkDir := path.Join(server.chunkedPath, fmt.Sprint(claims.ChunkedId))
-	err = os.MkdirAll(chunkDir, 0700)
+	err = os.MkdirAll(chunkDir, 0755)
 	if err != nil {
 		log.Println("Error creating directory: ", err)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -185,7 +185,7 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dst, err := os.OpenFile(chunkPath, os.O_WRONLY|os.O_CREATE, 0600)
+	dst, err := os.OpenFile(chunkPath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error creating file:", err)
@@ -223,7 +223,7 @@ func uploadChunkedProgress(rw http.ResponseWriter, req *http.Request) {
 func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) error {
 	chunkDir := path.Join(server.chunkedPath, fmt.Sprint(chunkedId))
 	chunkFullFilePath := path.Join(chunkDir, "fullfile")
-	fullFile, err := os.OpenFile(chunkFullFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	fullFile, err := os.OpenFile(chunkFullFilePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		log.Println("Error creating file:", err)
 		return err
