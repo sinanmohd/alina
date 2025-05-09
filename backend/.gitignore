@@ -1,3 +1,8 @@
+# frontend build output
 internal/server/frontend/
+
+# air
 tmp/
+
+# go
 main

@@ -1,6 +1,20 @@
 {
-  "name": "nuxt-app",
+  "name": "alina",
+  "description": "Your frenly neighbourhood file sharing website.",
   "private": true,
+  "author": {
+    "name": "sinanmohd",
+    "url": "https://www.sinanmohd.com"
+  },
+  "homepage": "https://github.com/sinanmohd/alina",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sinanmohd/alina.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sinanmohd/alina/issues"
+  },
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "build": "nuxt build",

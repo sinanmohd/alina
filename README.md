@@ -15,8 +15,8 @@ Your awesome frenly neighbourhood file sharing website.
 - Pause, resume, and retry uploads effortlessly.
 - Prometheus/Grafana metrics.
 - Upload files directly from the terminal.
-- Secure chunked uploads with JWT without requiring a login.
 - Parallel accelerated chunked uploads.
+- Secure chunked uploads with JWT without requiring a login.
 - Auto Merge duplicate files to save space.
 - Markdown rendering for text notes.
 - Sleek, user-friendly interface.
@@ -31,8 +31,8 @@ Your awesome frenly neighbourhood file sharing website.
 nix develop
 
 cd ./frontend
-npm i
-npx nuxi generate
+pnpm i
+pnpm exec nuxt generate
 cd -
 
 rm -rf ./backend/internal/server/frontend
@@ -48,7 +48,7 @@ cd -
 # frontend
 nix develop
 cd ./frontend
-NUXT_PUBLIC_SERVER_URL=http://localhost:8008 npx nuxt dev --host
+NUXT_PUBLIC_SERVER_URL=http://localhost:8008 pnpm exec nuxt dev --host
 
 # backend
 nix develop

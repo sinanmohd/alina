@@ -28,15 +28,16 @@ type Config struct {
 }
 
 func New() (*Config, error) {
-	var config Config = Config{
+	defaultSecretKey := "change-me-for-dev-only"
+	config := Config{
 		Server: ServerConfig{
 			Host:          "[::]",
 			Port:          8008,
 			Data:          "alina_data",
 			PublicUrl:     "http://localhost:8008",
-			FileSizeLimit: 1024 * 1024 * 1024 * 64,
+			FileSizeLimit: 1024 * 1024 * 256, // 256MB
 			ChunkSize:     1024 * 1024, // 1MB
-			SecretKey:     "change-me-for-dev-only",
+			SecretKey:     defaultSecretKey,
 			CorsAllowAll:  false,
 		},
 		Db: DatabaseConfig{
@@ -46,7 +47,7 @@ func New() (*Config, error) {
 
 	var configPath string
 	defaultConfigPath := "/etc/alina.conf"
-	if value, ok := os.LookupEnv("CONFIG"); ok {
+	if value, ok := os.LookupEnv("ALINA_CONFIG"); ok {
 		configPath = value
 	} else {
 		configPath = defaultConfigPath
@@ -81,6 +82,13 @@ func New() (*Config, error) {
 
 	if value, ok := os.LookupEnv("DB_URL"); ok {
 		config.Db.Url = value
+	}
+
+	if value, ok := os.LookupEnv("ALINA_SECRET_KEY"); ok {
+		config.Server.SecretKey = value
+	}
+	if (config.Server.SecretKey == defaultSecretKey) {
+		log.Println("Warning using the defaultSecretKey is not safe for production")
 	}
 
 	// TODO: validator
