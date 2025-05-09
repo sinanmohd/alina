@@ -18,8 +18,6 @@ await callOnce(async () => {
   const { data } = await useFetch(`${serverUrl.value}/_alina/config`)
   serverConfig.value = data.value as ServerConfig
 });
-
-console.log('ggg', useRuntimeConfig())
 </script>
 
 <template>

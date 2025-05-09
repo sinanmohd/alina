@@ -279,7 +279,13 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		fileId56 := base56.Encode(uint64(row.ID))
 		fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
 
-		fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
+		_, err = rw.Write([]byte(fileName))
+			if err != nil {
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			log.Println("Error writing response:", err)
+			return err
+		}
+
 		return nil
 	}
 
@@ -336,7 +342,13 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		log.Println("Error removing chunkDir:", err)
 	}
 
-	fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
+	_, err = rw.Write([]byte(fileName))
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error writing response:", err)
+		return err
+	}
+
 	return nil
 }
 

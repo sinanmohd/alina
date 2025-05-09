@@ -34,31 +34,33 @@ async function upload() {
 
     return
   }
+
   const body = new FormData();
-  body.append("file", new Blob([textContentTrimmed], { type: 'text/plain'}))
+  const blob = new Blob([textContentTrimmed], { type: 'text/plain'});
+  body.append("file", blob, 'note.text');
 
-  const req = await useFetch(`${serverUrl.value}/_alina/upload/simple`, {
+  await $fetch(`${serverUrl.value}/_alina/uplcvoad/simple`, {
     method: "POST",
-    body: body
-  })
-  if (req.status.value == "error" || !req.data.value) {
+    body: body,
+    server: false,
+    headers: {"cache-control": "no-cache"},
+  }).then((d) => {
+    if (textMarkdownSwitch.value) {
+      const  data =  d as string
+      const fileId = data.split('/').slice(-1)[0].replace('.txt', '')
+      uploadLink.value = `${serverUrl.value}/notes/${fileId}`
+    } else {
+      uploadLink.value = d as string;
+    }
+
+    fileUploadDialog.value = true;
+  }).catch(() => {
     toast("Upload Failed", {
-      description: req.error.value?.message,
+      description: "Failed upload notes, try again later",
     });
-
+  }).finally(() => {
     textIsUploading.value = false;
-    return
-  }
-
-  if (textMarkdownSwitch.value) {
-    const  data =  req.data.value as string
-    const fileId = data.split('/').slice(-1)[0].replace('.txt', '')
-    uploadLink.value = `${serverUrl.value}/notes/${fileId}`
-  } else {
-    uploadLink.value = req.data.value as string;
-  }
-
-  fileUploadDialog.value = true;
+  })
 }
 </script>
 

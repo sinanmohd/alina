@@ -167,7 +167,7 @@ async function upload() {
 
   clearInterval(fileSpeedInterval.value)
   uploadedChunkCount.value = 0
-  uploadLink.value = responseText as string;
+  uploadLink.value = `${serverUrl.value}/${responseText}`;
   fileUploadDialog.value = true;
   files.value.length = 0;
   filesIsUploading.value = false;

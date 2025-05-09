@@ -18,17 +18,17 @@ function copyExamble(){
     </CardHeader>
 
     <CardContent class="space-y-2">
-    <code class="text-sm inline-flex bg-gray-50 rounded-lg p-2">
-        <span class="flex gap-4">
-            <span class="shrink-0 text-gray-500 my-auto">
-                $
-            </span>
-            <span class="flex-1 wrap-anywhere my-auto">{{terminalExamble}}</span>
-            <Button variant="outline" class="my-auto" :onclick="copyExamble">
-              <Icon name="mdi:content-copy"/>
-            </Button>
-        </span>
-    </code>
+      <span class="text-sm bg-gray-50 rounded-lg p-2 flex gap-4 justify-between w-full">
+          <span class="text-gray-500 my-auto">
+              $
+          </span>
+
+          <span class="flex-1 wrap-anywhere my-auto">{{terminalExamble}}</span>
+
+          <Button variant="outline" class="my-auto" :onclick="copyExamble">
+            <Icon name="mdi:content-copy"/>
+          </Button>
+      </span>
     </CardContent>
   </Card>
 </template>
