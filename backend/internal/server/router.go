@@ -39,7 +39,7 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	}
 
 	if cfg.CorsAllowAll {
-		corsOptionsHandler := middleware(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		corsOptionsHandler := middlewareCorsOnFlag(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.Header().Set("Access-Control-Allow-Methods", "*")
 			rw.Header().Set("Access-Control-Allow-Headers", "*")
 		}))
@@ -57,25 +57,28 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 		log.Println("Error traversing fs: ", err)
 		return err
 	}
-	mux.Handle("GET /home/", http.StripPrefix("/home/", http.FileServer(http.FS(frontend))))
+	httpFs := http.FileServer(http.FS(frontend))
+	mux.Handle("GET /home/", middlewareCorsAlways(http.StripPrefix("/home/", httpFs)))
+	mux.Handle("GET /favicon.ico", httpFs)
+	mux.Handle("GET /robots.txt", httpFs)
 
-	fs := middleware(http.FileServer(http.Dir(server.storagePath)))
+	fs := middlewareCorsOnFlag(http.FileServer(http.Dir(server.storagePath)))
 	mux.Handle("GET /{fileId}", fs)
 	mux.Handle("GET /files/{fileId}", http.StripPrefix("/files/", fs))
 
 	mux.HandleFunc("GET /notes/{fileId}", notes)
 	mux.HandleFunc("GET /notes/styles.css", notesCSS)
 
-	publicConfigHandler := middleware(http.HandlerFunc(publicConfig))
+	publicConfigHandler := middlewareCorsOnFlag(http.HandlerFunc(publicConfig))
 	mux.Handle("GET /_alina/config", publicConfigHandler)
 
-	uploadSimpleHandler := middleware(http.HandlerFunc(uploadSimple))
+	uploadSimpleHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadSimple))
 	mux.Handle("POST /", uploadSimpleHandler)
 	mux.Handle("POST /_alina/upload/simple", uploadSimpleHandler)
 
-	uploadChunkedStartHandler := middleware(http.HandlerFunc(uploadChunkedStart))
-	uploadChunkedProgressHandler := middleware(http.HandlerFunc(uploadChunkedProgress))
-	uploadChunkedCancelHandler := middleware(http.HandlerFunc(uploadChunkedCancel))
+	uploadChunkedStartHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedStart))
+	uploadChunkedProgressHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedProgress))
+	uploadChunkedCancelHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedCancel))
 	mux.Handle("POST /_alina/upload/chunked", uploadChunkedStartHandler)
 	mux.Handle("PATCH /_alina/upload/chunked", uploadChunkedProgressHandler)
 	mux.Handle("DELETE /_alina/upload/chunked", uploadChunkedCancelHandler)
