@@ -70,10 +70,13 @@ in
       };
     };
 
-    systemd.services.alina = {
+    systemd.services.alina = rec {
       description = "Your frenly neighbourhood file sharing website.";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network-online.target" ];
+      after = [
+        "network-online.target"
+      ] ++ lib.optional config.services.postgresql.enable "postgresql.service";
+      wants = after;
       environment = defaultEnvs // cfg.environment;
 
       serviceConfig = {
