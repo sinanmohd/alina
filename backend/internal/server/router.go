@@ -57,12 +57,12 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 		log.Println("Error traversing fs: ", err)
 		return err
 	}
-	httpFs := http.FileServer(http.FS(frontend))
-	mux.Handle("GET /home/", middlewareCorsAlways(http.StripPrefix("/home/", httpFs)))
-	mux.Handle("GET /favicon.ico", httpFs)
-	mux.Handle("GET /robots.txt", httpFs)
+	frontendFs := http.FileServer(http.FS(frontend))
+	mux.Handle("GET /home/", http.StripPrefix("/home/", frontendFs))
+	mux.Handle("GET /favicon.ico", frontendFs)
+	mux.Handle("GET /robots.txt", frontendFs)
 
-	fs := middlewareCorsOnFlag(http.FileServer(http.Dir(server.storagePath)))
+	fs := middlewareCorsAlways(http.FileServer(http.Dir(server.storagePath)))
 	mux.Handle("GET /{fileId}", fs)
 	mux.Handle("GET /files/{fileId}", http.StripPrefix("/files/", fs))
 
