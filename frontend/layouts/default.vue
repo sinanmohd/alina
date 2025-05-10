@@ -34,7 +34,7 @@
       <section class="flex">
         <Button variant="ghost">
           <a href="https://www.sinanmohd.com/" target="_blank">
-            <Icon name="mdi:web" class="text-2xl"/>
+            <Icon name="lucide:globe" class="text-2xl"/>
           </a>
         </Button>
         <Button variant="ghost">

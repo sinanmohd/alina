@@ -262,7 +262,7 @@ function addInput(event: Event) {
           </div>
 
           <div v-if="isPaused" class="flex space-x-1 mx-auto w-min">
-            <Icon name="mdi:pause-circle-outline" class="my-auto" />
+            <Icon name="lucide:circle-pause" class="my-auto" />
             <p class="my-auto">Paused</p>
           </div>
           <div v-else-if="isZipping" class="flex space-x-1 mx-auto w-min">
@@ -327,7 +327,7 @@ function addInput(event: Event) {
       </div>
       <div v-for="(file, index) in files" class="border rounded-lg p-2 flex justify-between gap-2">
         <div class="flex gap-2 truncate">
-          <Icon name="uil:file"  class="text-4xl my-auto"/>
+          <Icon name="lucide:file"  class="text-4xl my-auto"/>
           <div class="truncate">
             <div class="font-bold my-auto truncate">
               {{ file.name }}
@@ -341,7 +341,7 @@ function addInput(event: Event) {
           </div>
         </div>
         <Button v-if="!filesIsUploading" variant="ghost" class="my-auto" @click="filesRm(index)">
-          <Icon name="mdi:close" />
+          <Icon name="lucide:x" />
         </Button>
       </div>
     </CardContent>

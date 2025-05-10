@@ -47,11 +47,11 @@ async function dialogCancel() {
         Files
       </TabsTrigger>
       <TabsTrigger value="text">
-        <Icon name="material-symbols:markdown-outline"/>
+        <Icon name="bi:markdown"/>
         Text
       </TabsTrigger>
       <TabsTrigger value="terminal">
-        <Icon name="mdi:terminal"/>
+        <Icon name="lucide:square-terminal"/>
         Terminal
       </TabsTrigger>
     </TabsList>

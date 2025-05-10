@@ -26,7 +26,7 @@ function copyExamble(){
           <span class="flex-1 wrap-anywhere my-auto">{{terminalExamble}}</span>
 
           <Button variant="outline" class="my-auto" :onclick="copyExamble">
-            <Icon name="mdi:content-copy"/>
+            <Icon name="lucide:copy"/>
           </Button>
       </span>
     </CardContent>
