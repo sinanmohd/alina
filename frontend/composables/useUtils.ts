@@ -3,12 +3,17 @@ import { toast } from 'vue-sonner';
 
 export const useUtils = () => {
   return {
-    formatBytes: (bytes: number, decimals: number = 2): string => {
+    formatData: (bytes: number, bits: boolean = false, decimals: number = 2): string => {
       if (bytes === 0) return '0 Bytes';
 
       const k = 1024;
       const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      let sizes;
+      if (bits) {
+        sizes = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb'];
+      } else {
+        sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      }
 
       const i = Math.floor(Math.log(bytes) / Math.log(k));
 

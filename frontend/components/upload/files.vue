@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner';
 
-const { formatBytes, filesZip, chunksFromBlob: chunksFromFile, formatDuration } = useUtils();
+const { formatData, filesZip, chunksFromBlob: chunksFromFile, formatDuration } = useUtils();
 const files = useState<File[]>('files', () => []);
 const isDragging = ref(false);
 const filesIsUploading = useState('filesIsUploading', () => false);
@@ -51,7 +51,7 @@ async function upload() {
     return
   } else if (fileTotalBytes.value > serverConfig.value.file_size_limit) {
     toast('Files Too Large', {
-      description: `These files exceeds the upload size limit of ${formatBytes(serverConfig.value.file_size_limit)}`,
+      description: `These files exceeds the upload size limit of ${formatData(serverConfig.value.file_size_limit)}`,
     });
 
     return
@@ -69,7 +69,7 @@ async function upload() {
 
     if (zip.size > serverConfig.value.file_size_limit) {
         toast('Zip file Too Large', {
-          description: `These files after zipping exceeds the upload size limit of ${formatBytes(serverConfig.value.file_size_limit)}`,
+          description: `These files after zipping exceeds the upload size limit of ${formatData(serverConfig.value.file_size_limit)}`,
         });
 
         filesIsUploading.value = true;
@@ -255,10 +255,10 @@ function addInput(event: Event) {
       <div v-if="filesIsUploading" class="h-56 border-2 rounded-lg p-6 space-y-4 flex flex-col justify-between">
         <div class="space-y-1.5 m-auto">
           <div v-if="!isZipping" class="text-4xl font-bold">
-            {{ formatBytes(bytesUploadedPerSecond)}}/s
+            {{ formatData(bytesUploadedPerSecond * 8, true)}}ps
           </div>
           <div v-else class="text-4xl font-bold">
-            {{ formatBytes(fileTotalBytes)}}
+            {{ formatData(fileTotalBytes)}}
           </div>
 
           <div v-if="isPaused" class="flex space-x-1 mx-auto w-min">
@@ -319,10 +319,10 @@ function addInput(event: Event) {
           {{ files.length }} files selected
         </div>
         <div v-if="fileTotalBytes <= serverConfig.file_size_limit">
-          {{ formatBytes(fileTotalBytes)}} in total
+          {{ formatData(fileTotalBytes)}} in total
         </div>
         <div v-else class="text-red-700">
-          {{ formatBytes(fileTotalBytes)}} in total
+          {{ formatData(fileTotalBytes)}} in total
         </div>
       </div>
       <div v-for="(file, index) in files" class="border rounded-lg p-2 flex justify-between gap-2">
@@ -333,10 +333,10 @@ function addInput(event: Event) {
               {{ file.name }}
             </div>
             <div v-if="file.size <= serverConfig.file_size_limit" class="text-muted-foreground text-sm">
-              {{ formatBytes(file.size) }}
+              {{ formatData(file.size) }}
             </div>
             <div v-else class="text-sm text-red-400">
-              {{ formatBytes(file.size) }}
+              {{ formatData(file.size) }}
             </div>
           </div>
         </div>
