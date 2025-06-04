@@ -12,14 +12,14 @@ Your awesome frenly neighbourhood file sharing website.
 
 # features
 
-- Pause, resume, and retry uploads effortlessly.
+- Pause, resume, and retry uploads.
 - Prometheus/Grafana metrics.
 - Upload files directly from the terminal.
-- Parallel accelerated chunked uploads.
-- Secure chunked uploads with JWT without requiring a login.
+- Parallel chunked uploads.
+- Secure chunked uploads without requiring a login.
 - Auto Merge duplicate files to save space.
 - Markdown rendering for text notes.
-- Sleek, user-friendly interface.
+- Sleek, design is very humane :P.
 - and much more...
 
 # gallery
@@ -43,7 +43,7 @@ go build -o ../alina ./cmd/alina/main.go
 cd -
 ```
 
-# dev setup
+# development
 ```
 # frontend
 nix develop
