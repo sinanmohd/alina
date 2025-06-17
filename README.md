@@ -48,10 +48,13 @@ cd -
 # frontend
 nix develop
 cd ./frontend
+pnpm install
 NUXT_PUBLIC_SERVER_URL=http://localhost:8008 pnpm exec nuxt dev --host
 
 # backend
 nix develop
+mkdir -p ./backend/internal/server/frontend
+touch ./backend/internal/server/frontend/stub
 cd ./backend
 air
 ```
