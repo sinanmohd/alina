@@ -28,26 +28,26 @@ type Config struct {
 }
 
 func New() (*Config, error) {
+	var secretKey string
 	defaultSecretKey := "change-me-for-dev-only"
-	defaultDataDir := "alina_data"
-	if value, ok := os.LookupEnv("STATE_DIRECTORY"); ok {
-		defaultDataDir = value
+	if value, ok := os.LookupEnv("ALINA_SECRET_KEY"); ok {
+		secretKey = value
+	} else {
+		secretKey = defaultSecretKey
 	}
 
-	config := Config{
-		Server: ServerConfig{
-			Host:          "[::]",
-			Port:          8008,
-			Data:          defaultDataDir,
-			PublicUrl:     "http://localhost:8008",
-			FileSizeLimit: 1024 * 1024 * 256, // 256MB
-			ChunkSize:     1024 * 1024, // 1MB
-			SecretKey:     defaultSecretKey,
-			CorsAllowAll:  false,
-		},
-		Db: DatabaseConfig{
-			Url: "postgresql:///alina?user=alina&host=/var/run/postgresql",
-		},
+	var dbUrl string
+	if value, ok := os.LookupEnv("DB_URL"); ok {
+		dbUrl = value
+	} else {
+		dbUrl = "postgresql:///alina?user=alina&host=/var/run/postgresql"
+	}
+
+	var dataDir string
+	if value, ok := os.LookupEnv("STATE_DIRECTORY"); ok {
+		dataDir = value
+	} else {
+		dataDir = "alina_data"
 	}
 
 	var configPath string
@@ -56,6 +56,22 @@ func New() (*Config, error) {
 		configPath = value
 	} else {
 		configPath = defaultConfigPath
+	}
+
+	config := Config{
+		Server: ServerConfig{
+			Host:          "[::]",
+			Port:          8008,
+			Data:          dataDir,
+			PublicUrl:     "http://localhost:8008",
+			FileSizeLimit: 1024 * 1024 * 1024, // 1GB
+			ChunkSize:     1024 * 1024, // 1MB
+			SecretKey:     secretKey,
+			CorsAllowAll:  false,
+		},
+		Db: DatabaseConfig{
+			Url: dbUrl,
+		},
 	}
 
 	_, err := os.Stat(configPath)
@@ -85,18 +101,9 @@ func New() (*Config, error) {
 	flag.StringVar(&config.Db.Url, "db-url", config.Db.Url, "Database URL")
 	flag.Parse()
 
-	if value, ok := os.LookupEnv("DB_URL"); ok {
-		config.Db.Url = value
-	}
-
-	if value, ok := os.LookupEnv("ALINA_SECRET_KEY"); ok {
-		config.Server.SecretKey = value
-	}
 	if (config.Server.SecretKey == defaultSecretKey) {
 		log.Println("Warning using the defaultSecretKey is not safe for production")
 	}
-
-	// TODO: validator
 
 	return &config, nil
 }
