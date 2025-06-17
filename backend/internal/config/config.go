@@ -18,6 +18,7 @@ type ServerConfig struct {
 	ChunkSize     int    `toml:"chunk_size"`
 	SecretKey     string `toml:"secret_key"`
 	CorsAllowAll  bool   `toml:"cors_allow_all"`
+	UploadsPerDay int    `toml:"uploads_per_day"`
 }
 type DatabaseConfig struct {
 	Url string `toml:"url"`
@@ -65,9 +66,10 @@ func New() (*Config, error) {
 			Data:          dataDir,
 			PublicUrl:     "http://localhost:8008",
 			FileSizeLimit: 1024 * 1024 * 1024, // 1GB
-			ChunkSize:     1024 * 1024, // 1MB
+			ChunkSize:     1024 * 1024,        // 1MB
 			SecretKey:     secretKey,
 			CorsAllowAll:  false,
+			UploadsPerDay: 16,
 		},
 		Db: DatabaseConfig{
 			Url: dbUrl,
@@ -101,7 +103,7 @@ func New() (*Config, error) {
 	flag.StringVar(&config.Db.Url, "db-url", config.Db.Url, "Database URL")
 	flag.Parse()
 
-	if (config.Server.SecretKey == defaultSecretKey) {
+	if config.Server.SecretKey == defaultSecretKey {
 		log.Println("Warning using the defaultSecretKey is not safe for production")
 	}
 

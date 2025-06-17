@@ -23,7 +23,7 @@ var css []byte
 func notes(rw http.ResponseWriter, req *http.Request) {
 	fileId56 := req.PathValue("fileId")
 	fileId, err := base56.Decode(fileId56)
-	if (err != nil) {
+	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -32,10 +32,10 @@ func notes(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
-	} else if (row.FileSize > 1024 * 1024) {
+	} else if row.FileSize > 1024*1024 {
 		http.Error(rw, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
 		return
-	} else if (!strings.HasPrefix(row.MimeType, "text/")) {
+	} else if !strings.HasPrefix(row.MimeType, "text/") {
 		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

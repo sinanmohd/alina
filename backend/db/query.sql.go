@@ -14,9 +14,9 @@ import (
 
 const chunkedCreate = `-- name: ChunkedCreate :one
 INSERT INTO chunked (
-  file_size, name, ip_addr, chunks_left, chunks_total
+  file_size, name, ip_addr, chunks_left, chunks_total, user_agent
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3, $4, $5, $6
 )
 RETURNING id
 `
@@ -27,6 +27,7 @@ type ChunkedCreateParams struct {
 	IpAddr      netip.Addr
 	ChunksLeft  int32
 	ChunksTotal int32
+	UserAgent   int64
 }
 
 func (q *Queries) ChunkedCreate(ctx context.Context, arg ChunkedCreateParams) (int32, error) {
@@ -36,6 +37,7 @@ func (q *Queries) ChunkedCreate(ctx context.Context, arg ChunkedCreateParams) (i
 		arg.IpAddr,
 		arg.ChunksLeft,
 		arg.ChunksTotal,
+		arg.UserAgent,
 	)
 	var id int32
 	err := row.Scan(&id)
@@ -90,32 +92,11 @@ func (q *Queries) ChunkedLeftDecrement(ctx context.Context, id int32) (int32, er
 	return chunks_left, err
 }
 
-const chunkedToFile = `-- name: ChunkedToFile :one
-INSERT INTO files (mime_type, file_size, name, ip_addr, hash)
-SELECT $2, chunked.file_size, chunked.name, chunked.ip_addr, $3 
-FROM chunked
-WHERE chunked.id = $1
-RETURNING files.id
-`
-
-type ChunkedToFileParams struct {
-	ID       int32
-	MimeType string
-	Hash     string
-}
-
-func (q *Queries) ChunkedToFile(ctx context.Context, arg ChunkedToFileParams) (int32, error) {
-	row := q.db.QueryRow(ctx, chunkedToFile, arg.ID, arg.MimeType, arg.Hash)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
 const fileCreate = `-- name: FileCreate :one
 INSERT INTO files (
-  mime_type, file_size, name, ip_addr, hash
+  mime_type, file_size, hash
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3
 )
 RETURNING id
 `
@@ -123,32 +104,35 @@ RETURNING id
 type FileCreateParams struct {
 	MimeType string
 	FileSize int64
-	Name     string
-	IpAddr   netip.Addr
 	Hash     string
 }
 
 func (q *Queries) FileCreate(ctx context.Context, arg FileCreateParams) (int32, error) {
-	row := q.db.QueryRow(ctx, fileCreate,
-		arg.MimeType,
-		arg.FileSize,
-		arg.Name,
-		arg.IpAddr,
-		arg.Hash,
-	)
+	row := q.db.QueryRow(ctx, fileCreate, arg.MimeType, arg.FileSize, arg.Hash)
 	var id int32
 	err := row.Scan(&id)
 	return id, err
 }
 
-const fileDelete = `-- name: FileDelete :exec
-DELETE FROM files
-WHERE id = $1
+const fileFromChunked = `-- name: FileFromChunked :one
+INSERT INTO files (mime_type, file_size, hash)
+SELECT $2, chunked.file_size, $3 
+FROM chunked
+WHERE chunked.id = $1
+RETURNING files.id
 `
 
-func (q *Queries) FileDelete(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, fileDelete, id)
-	return err
+type FileFromChunkedParams struct {
+	ID       int32
+	MimeType string
+	Hash     string
+}
+
+func (q *Queries) FileFromChunked(ctx context.Context, arg FileFromChunkedParams) (int32, error) {
+	row := q.db.QueryRow(ctx, fileFromChunked, arg.ID, arg.MimeType, arg.Hash)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const fileFromHash = `-- name: FileFromHash :one
@@ -183,4 +167,72 @@ func (q *Queries) FileFromId(ctx context.Context, id int32) (FileFromIdRow, erro
 	var i FileFromIdRow
 	err := row.Scan(&i.MimeType, &i.FileSize)
 	return i, err
+}
+
+const uploadCreate = `-- name: UploadCreate :one
+INSERT INTO uploads (
+  ip_addr, user_agent, file, name
+) VALUES (
+  $1, $2, $3, $4
+)
+RETURNING id
+`
+
+type UploadCreateParams struct {
+	IpAddr    netip.Addr
+	UserAgent int64
+	File      int64
+	Name      string
+}
+
+func (q *Queries) UploadCreate(ctx context.Context, arg UploadCreateParams) (int64, error) {
+	row := q.db.QueryRow(ctx, uploadCreate,
+		arg.IpAddr,
+		arg.UserAgent,
+		arg.File,
+		arg.Name,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const uploadFromChunked = `-- name: UploadFromChunked :exec
+INSERT INTO uploads (ip_addr, user_agent, file, name)
+SELECT chunked.ip_addr, chunked.user_agent, $2, chunked.name 
+FROM chunked
+WHERE chunked.id = $1
+`
+
+type UploadFromChunkedParams struct {
+	ID   int32
+	File int64
+}
+
+func (q *Queries) UploadFromChunked(ctx context.Context, arg UploadFromChunkedParams) error {
+	_, err := q.db.Exec(ctx, uploadFromChunked, arg.ID, arg.File)
+	return err
+}
+
+const userAgentIdGet = `-- name: UserAgentIdGet :one
+WITH res AS (
+    INSERT INTO user_agents (user_agent)
+    VALUES ($1)
+    ON CONFLICT (user_agent) DO NOTHING
+    RETURNING id
+)
+SELECT id
+FROM res
+UNION
+SELECT id
+FROM user_agents
+WHERE user_agent = $1
+LIMIT 1
+`
+
+func (q *Queries) UserAgentIdGet(ctx context.Context, userAgent string) (int64, error) {
+	row := q.db.QueryRow(ctx, userAgentIdGet, userAgent)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
