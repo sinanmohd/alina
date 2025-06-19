@@ -18,10 +18,10 @@ CREATE TABLE uploads (
 DO $$ BEGIN
 	IF EXISTS (SELECT FROM files) THEN
 		INSERT INTO user_agents (user_agent)
-		VALUES ("unknown: db migrated from old schema revision");
+		VALUES ('unknown: db migrated from old schema revision');
 
-		INSERT INTO uploads(created_at, ip_addr, user_agent, name)
-		SELECT created_at, ip_addr, 1, name
+		INSERT INTO uploads(created_at, ip_addr, user_agent, name, file)
+		SELECT files.created_at, files.ip_addr, 1, files.name, files.id
 		FROM files;
 	END IF;
 END $$;
