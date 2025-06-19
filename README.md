@@ -19,6 +19,7 @@ Your awesome frenly neighbourhood file sharing website.
 - Secure chunked uploads without requiring a login.
 - Auto Merge duplicate files to save space.
 - Markdown rendering for text notes.
+- IP based rate limiting.
 - Sleek, design is very humane :P.
 - and much more...
 
