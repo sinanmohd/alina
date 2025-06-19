@@ -22,13 +22,12 @@ WHERE NOT EXISTS (
 )
 RETURNING id;
 
--- name: UploadCreate :one
+-- name: UploadCreate :exec
 INSERT INTO uploads (
   ip_addr, user_agent, file, name
 ) VALUES (
   $1, $2, $3, $4
-)
-RETURNING id;
+);
 
 -- name: FileCreate :one
 INSERT INTO files (

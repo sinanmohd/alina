@@ -169,13 +169,12 @@ func (q *Queries) FileFromId(ctx context.Context, id int32) (FileFromIdRow, erro
 	return i, err
 }
 
-const uploadCreate = `-- name: UploadCreate :one
+const uploadCreate = `-- name: UploadCreate :exec
 INSERT INTO uploads (
   ip_addr, user_agent, file, name
 ) VALUES (
   $1, $2, $3, $4
 )
-RETURNING id
 `
 
 type UploadCreateParams struct {
@@ -185,16 +184,14 @@ type UploadCreateParams struct {
 	Name      string
 }
 
-func (q *Queries) UploadCreate(ctx context.Context, arg UploadCreateParams) (int64, error) {
-	row := q.db.QueryRow(ctx, uploadCreate,
+func (q *Queries) UploadCreate(ctx context.Context, arg UploadCreateParams) error {
+	_, err := q.db.Exec(ctx, uploadCreate,
 		arg.IpAddr,
 		arg.UserAgent,
 		arg.File,
 		arg.Name,
 	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	return err
 }
 
 const uploadFromChunked = `-- name: UploadFromChunked :exec

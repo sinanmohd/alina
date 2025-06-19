@@ -84,7 +84,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 		fileId56 := base56.Encode(uint64(row.ID))
 		fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
 
-		_, err := qtx.UploadCreate(context.Background(), db.UploadCreateParams{
+		err := qtx.UploadCreate(context.Background(), db.UploadCreateParams{
 			Name:      header.Filename,
 			UserAgent: userAgentId,
 			File:      int64(row.ID),
@@ -124,7 +124,7 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 		log.Println("Error querying db:", err)
 		return
 	}
-	_, err = qtx.UploadCreate(context.Background(), db.UploadCreateParams{
+	err = qtx.UploadCreate(context.Background(), db.UploadCreateParams{
 		Name:      header.Filename,
 		IpAddr:    *ipAddr,
 		UserAgent: userAgentId,
