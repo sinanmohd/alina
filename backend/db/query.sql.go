@@ -214,6 +214,20 @@ func (q *Queries) UploadFromChunked(ctx context.Context, arg UploadFromChunkedPa
 	return err
 }
 
+const uploadsIpCountPerDay = `-- name: UploadsIpCountPerDay :one
+SELECT COUNT(*)
+FROM uploads
+WHERE uploads.ip_addr = $1
+AND uploads.created_at >= CURRENT_TIMESTAMP - INTERVAL '1 day'
+`
+
+func (q *Queries) UploadsIpCountPerDay(ctx context.Context, ipAddr netip.Addr) (int64, error) {
+	row := q.db.QueryRow(ctx, uploadsIpCountPerDay, ipAddr)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const userAgentIdGet = `-- name: UserAgentIdGet :one
 WITH res AS (
     INSERT INTO user_agents (user_agent)

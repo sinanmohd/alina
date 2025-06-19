@@ -80,3 +80,9 @@ WHERE hash = $1;
 -- name: FileFromId :one
 SELECT mime_type, file_size FROM files
 WHERE id = $1;
+
+-- name: UploadsIpCountPerDay :one
+SELECT COUNT(*)
+FROM uploads
+WHERE uploads.ip_addr = $1
+AND uploads.created_at >= CURRENT_TIMESTAMP - INTERVAL '1 day';

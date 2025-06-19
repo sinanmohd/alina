@@ -75,11 +75,11 @@ func Run(cfg config.ServerConfig, queries *db.Queries, pool *pgxpool.Pool) error
 	publicConfigHandler := middlewareCorsOnFlag(http.HandlerFunc(publicConfig))
 	mux.Handle("GET /_alina/config", publicConfigHandler)
 
-	uploadSimpleHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadSimple))
+	uploadSimpleHandler := middlewareIpLimiter(middlewareCorsOnFlag(http.HandlerFunc(uploadSimple)))
 	mux.Handle("POST /", uploadSimpleHandler)
 	mux.Handle("POST /_alina/upload/simple", uploadSimpleHandler)
 
-	uploadChunkedStartHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedStart))
+	uploadChunkedStartHandler := middlewareIpLimiter(middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedStart)))
 	uploadChunkedProgressHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedProgress))
 	uploadChunkedCancelHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedCancel))
 	mux.Handle("POST /_alina/upload/chunked", uploadChunkedStartHandler)
