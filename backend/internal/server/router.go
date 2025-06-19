@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"sinanmohd.com/alina/db"
 	"sinanmohd.com/alina/internal/config"
@@ -16,6 +17,7 @@ import (
 
 var server struct {
 	queries *db.Queries
+	pool    *pgxpool.Pool
 	cfg     config.ServerConfig
 
 	storagePath string
@@ -25,9 +27,10 @@ var server struct {
 //go:embed  all:frontend
 var frontendFs embed.FS
 
-func Run(cfg config.ServerConfig, queries *db.Queries) error {
+func Run(cfg config.ServerConfig, queries *db.Queries, pool *pgxpool.Pool) error {
 	mux := http.NewServeMux()
 	server.queries = queries
+	server.pool = pool
 	server.cfg = cfg
 	server.storagePath = path.Join(cfg.Data, "storage")
 	server.chunkedPath = path.Join(cfg.Data, "chunked")
@@ -72,11 +75,11 @@ func Run(cfg config.ServerConfig, queries *db.Queries) error {
 	publicConfigHandler := middlewareCorsOnFlag(http.HandlerFunc(publicConfig))
 	mux.Handle("GET /_alina/config", publicConfigHandler)
 
-	uploadSimpleHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadSimple))
+	uploadSimpleHandler := middlewareIpLimiter(middlewareCorsOnFlag(http.HandlerFunc(uploadSimple)))
 	mux.Handle("POST /", uploadSimpleHandler)
 	mux.Handle("POST /_alina/upload/simple", uploadSimpleHandler)
 
-	uploadChunkedStartHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedStart))
+	uploadChunkedStartHandler := middlewareIpLimiter(middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedStart)))
 	uploadChunkedProgressHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedProgress))
 	uploadChunkedCancelHandler := middlewareCorsOnFlag(http.HandlerFunc(uploadChunkedCancel))
 	mux.Handle("POST /_alina/upload/chunked", uploadChunkedStartHandler)

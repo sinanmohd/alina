@@ -68,14 +68,36 @@ func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 		log.Println("Error parsing ip:", err)
 		return
 	}
+	userAgent := req.Header.Get("User-Agent")
+	if userAgent == "" {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
+	txCtx := context.Background()
+	tx, err := server.pool.Begin(txCtx)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error creating transcation:", err)
+		return
+	}
+	defer tx.Rollback(txCtx)
+	qtx := server.queries.WithTx(tx)
+
+	userAgentId, err := qtx.UserAgentIdGet(context.Background(), userAgent)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error querying db:", err)
+		return
+	}
 	chunkCount := int32(math.Ceil(float64(data.FileSize) / float64(server.cfg.ChunkSize)))
-	chunkedId, err := server.queries.ChunkedCreate(context.Background(), db.ChunkedCreateParams{
+	chunkedId, err := qtx.ChunkedCreate(context.Background(), db.ChunkedCreateParams{
 		FileSize:    int64(data.FileSize),
 		Name:        data.Name,
 		IpAddr:      *ipAddr,
 		ChunksLeft:  chunkCount,
 		ChunksTotal: chunkCount,
+		UserAgent:   userAgentId,
 	})
 
 	claims := ChunkedJwtClaims{
@@ -83,7 +105,6 @@ func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 	}
 	chunkToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(server.cfg.SecretKey))
 	if err != nil {
-		server.queries.ChunkedDelete(context.Background(), chunkedId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error creating token:", err)
 		return
@@ -95,16 +116,10 @@ func uploadChunkedStart(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error marshaling response:", err)
-
-		err := server.queries.ChunkedDelete(context.Background(), chunkedId)
-		if err != nil {
-			// scheduled cleanup will catch this even if it fails
-			log.Println("Error querying db:", err)
-		}
-
 		return
 	}
 
+	tx.Commit(txCtx)
 	rw.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(rw, string(resp))
 	return
@@ -266,21 +281,39 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
+	txCtx := context.Background()
+	tx, err := server.pool.Begin(txCtx)
+	if err != nil {
+		log.Println("Error creating transcation:", err)
+		return err
+	}
+	defer tx.Rollback(txCtx)
+	qtx := server.queries.WithTx(tx)
+
 	row, err := server.queries.FileFromHash(context.Background(), hash)
 	if err == nil {
-		err := server.queries.ChunkedDelete(context.Background(), chunkedId)
+		defer fileCloseAndRemove(fullFile, chunkFullFilePath)
+
+		err = qtx.UploadFromChunked(context.Background(), db.UploadFromChunkedParams{
+			ID:   chunkedId,
+			File: int64(row.ID),
+		})
 		if err != nil {
-			fileCloseAndRemove(fullFile, chunkFullFilePath)
 			log.Println("Error querying db:", err)
 			return err
 		}
+		err = qtx.ChunkedDelete(context.Background(), chunkedId)
+		if err != nil {
+			log.Println("Error querying db:", err)
+			return err
+		}
+		tx.Commit(txCtx)
 
-		fileCloseAndRemove(fullFile, chunkDir)
 		fileId56 := base56.Encode(uint64(row.ID))
 		fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
 
 		_, err = rw.Write([]byte(fileName))
-			if err != nil {
+		if err != nil {
 			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			log.Println("Error writing response:", err)
 			return err
@@ -292,7 +325,7 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 	_, err = fullFile.Seek(0, io.SeekStart)
 	if err != nil {
 		log.Println("Error seeking file:", err)
-		os.Remove(chunkFullFilePath)
+		fileCloseAndRemove(fullFile, chunkFullFilePath)
 		return err
 	}
 	mtype, err := mimetype.DetectReader(fullFile)
@@ -302,10 +335,21 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		os.Remove(chunkFullFilePath)
 		return err
 	}
-	fileId, err := server.queries.ChunkedToFile(context.Background(), db.ChunkedToFileParams{
+
+	fileId, err := qtx.FileFromChunked(context.Background(), db.FileFromChunkedParams{
+		ID:       chunkedId,
 		MimeType: strings.Split(mtype.String(), ";")[0],
 		Hash:     hash,
-		ID:       chunkedId,
+	})
+	if err != nil {
+		os.Remove(chunkFullFilePath)
+		log.Println("Error querying db:", err)
+		return err
+	}
+
+	err = qtx.UploadFromChunked(context.Background(), db.UploadFromChunkedParams{
+		File: int64(fileId),
+		ID:   chunkedId,
 	})
 	if err != nil {
 		os.Remove(chunkFullFilePath)
@@ -320,18 +364,10 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 	if err != nil {
 		os.Remove(chunkFullFilePath)
 		log.Println("Error moving file:", err)
-
-		err = server.queries.FileDelete(context.Background(), fileId)
-		if err != nil {
-			os.Remove(chunkDir)
-			log.Println("Error querying db:", err)
-			return err
-		}
-
 		return err
 	}
 
-	err = server.queries.ChunkedDelete(context.Background(), chunkedId)
+	err = qtx.ChunkedDelete(context.Background(), chunkedId)
 	if err != nil {
 		// scheduled cleanup will catch this even if it fails
 		log.Println("Error querying db:", err)
@@ -342,6 +378,7 @@ func ChunkedToFile(chunkedId int32, chunksTotal int, rw http.ResponseWriter) err
 		log.Println("Error removing chunkDir:", err)
 	}
 
+	tx.Commit(txCtx)
 	_, err = rw.Write([]byte(fileName))
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

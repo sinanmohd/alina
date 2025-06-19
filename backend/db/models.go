@@ -19,15 +19,28 @@ type Chunked struct {
 	ChunksLeft  int32
 	ChunksTotal int32
 	Name        string
+	UserAgent   int64
 }
 
 type File struct {
 	ID         int32
-	CreatedAt  pgtype.Timestamp
 	LastAccess pgtype.Timestamp
 	MimeType   string
 	FileSize   int64
-	IpAddr     netip.Addr
 	Hash       string
-	Name       string
+}
+
+type Upload struct {
+	ID        int64
+	CreatedAt pgtype.Timestamp
+	IpAddr    netip.Addr
+	UserAgent int64
+	File      int64
+	Name      string
+}
+
+type UserAgent struct {
+	ID        int64
+	UserAgent string
+	CreatedAt pgtype.Timestamp
 }

@@ -49,11 +49,54 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
+	txCtx := context.Background()
+	tx, err := server.pool.Begin(txCtx)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error creating transcation:", err)
+		return
+	}
+	defer tx.Rollback(txCtx)
+	qtx := server.queries.WithTx(tx)
+
+	ipAddr, err := ipFromReq(req)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error parsing ip:", err)
+		return
+	}
+
+	userAgent := req.Header.Get("User-Agent")
+	if userAgent == "" {
+		http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	userAgentId, err := qtx.UserAgentIdGet(context.Background(), userAgent)
+	if err != nil {
+		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		log.Println("Error querying db:", err)
+		return
+	}
+
 	row, err := server.queries.FileFromHash(context.Background(), hash)
 	if err == nil {
 		fileId56 := base56.Encode(uint64(row.ID))
 		fileName := fmt.Sprintf("%v%v", fileId56, mimetype.Lookup(row.MimeType).Extension())
 
+		_, err := qtx.UploadCreate(context.Background(), db.UploadCreateParams{
+			Name:      header.Filename,
+			UserAgent: userAgentId,
+			File:      int64(row.ID),
+			IpAddr:    *ipAddr,
+		})
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			log.Println("Error querying db:", err)
+			return
+		}
+
+		tx.Commit(txCtx)
 		fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
 		return
 	}
@@ -71,19 +114,21 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ipAddr, err := ipFromReq(req)
+	fileId, err := qtx.FileCreate(context.Background(), db.FileCreateParams{
+		MimeType: strings.Split(mtype.String(), ";")[0],
+		FileSize: header.Size,
+		Hash:     hash,
+	})
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		log.Println("Error parsing ip:", err)
+		log.Println("Error querying db:", err)
 		return
 	}
-
-	fileId, err := server.queries.FileCreate(context.Background(), db.FileCreateParams{
-		MimeType: strings.Split(mtype.String(), ";")[0],
-		Name:     header.Filename,
-		FileSize: header.Size,
-		IpAddr:   *ipAddr,
-		Hash:     hash,
+	_, err = qtx.UploadCreate(context.Background(), db.UploadCreateParams{
+		Name:      header.Filename,
+		IpAddr:    *ipAddr,
+		UserAgent: userAgentId,
+		File:      int64(fileId),
 	})
 	if err != nil {
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -97,7 +142,6 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 
 	dst, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error creating file:", err)
 		return
@@ -106,19 +150,18 @@ func uploadSimple(rw http.ResponseWriter, req *http.Request) {
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
-		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error seeking file:", err)
 		return
 	}
 	_, err = io.Copy(dst, file)
 	if err != nil {
-		server.queries.FileDelete(context.Background(), fileId)
 		http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		log.Println("Error copying file:", err)
 		return
 	}
 
+	tx.Commit(txCtx)
 	fmt.Fprintf(rw, "%v/%v\n", server.cfg.PublicUrl, fileName)
 	return
 }

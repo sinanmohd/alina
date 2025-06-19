@@ -20,7 +20,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	err = server.Run(cfg.Server, queries)
+	err = server.Run(cfg.Server, queries, pool)
 	if err != nil {
 		os.Exit(1)
 	}
